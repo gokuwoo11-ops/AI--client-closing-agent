@@ -1,359 +1,121 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
   CalendarCheck,
   CheckCircle2,
   Clock,
-  HelpCircle,
   Loader2,
   Mail,
-  MapPin,
   Phone,
+  ShieldCheck,
   Sparkles,
   UserRound,
-  Brain,
-  Zap,
-  Star,
 } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { GlassPanel, PremiumMotionBackground } from "@/components/premium/PremiumMotionBackground";
 
-type Service = {
-  id: string;
-  name: string;
-  description?: string;
-  price?: string;
-  duration?: string;
-};
-
-type FAQ = {
-  id: string;
-  question: string;
-  answer: string;
-};
-
-type FunnelOption = {
-  id: string;
-  title: string;
-  answer: string;
-  serviceName?: string | null;
-};
-
-type FunnelOptionPage = {
-  id: string;
-  title: string;
-  subtitle?: string | null;
-  intent: "ENQUIRY" | "BOOKING" | "BOTH";
-  options: FunnelOption[];
-};
-
-type Slot = {
-  id: string;
-  title: string;
-  startsAt: string;
-  endsAt: string;
-  timezone: string;
-};
-
+type Service = { id: string; name: string; description?: string | null; price?: string | null; duration?: string | null };
+type FAQ = { id: string; question: string; answer: string };
+type FunnelOption = { id: string; title: string; answer?: string | null; serviceName?: string | null };
+type FunnelOptionPage = { id: string; title: string; subtitle?: string | null; intent: "ENQUIRY" | "BOOKING" | "BOTH"; options: FunnelOption[] };
+type Slot = { id: string; title?: string | null; startsAt: string; endsAt: string; timezone?: string | null };
 type PublicWorkspace = {
   id: string;
   name: string;
   businessProfile?: {
-    name: string;
-    niche: string;
-    location?: string;
-    contactEmail?: string;
-    contactPhone?: string;
-    workingHours?: string;
+    name?: string | null;
+    niche?: string | null;
+    location?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    workingHours?: string | null;
     services?: Service[];
     faqs?: FAQ[];
   } | null;
-  agentConfig?: {
-    fallbackMessage?: string | null;
-  } | null;
+  agentConfig?: { fallbackMessage?: string | null } | null;
   funnelOptionPages?: FunnelOptionPage[];
   bookingSlots?: Slot[];
 };
 
-type BookingResponse = {
-  success: boolean;
-  appointment?: { status?: string };
-  ai?: {
-    reply?: string;
-    summary?: string;
-    nextAction?: string;
-    score?: number;
-  };
-};
-
 type Intent = "" | "enquiry" | "booking";
-type FlowStep =
-  | "details"
-  | "intent"
-  | "enquiry"
-  | "booking"
-  | "slots"
-  | "success";
+type FlowStep = "details" | "intent" | "selection" | "requirement" | "slot" | "success";
+type SelectedOption = { type: string; id: string; title: string; answer: string; serviceName?: string | null };
+type FormState = { name: string; email: string; phone: string; message: string; slotId: string; website: string };
 
-type SelectedEnquiry =
-  | { type: "faq"; id: string; title: string; answer: string; serviceName?: string }
-  | { type: "service"; id: string; title: string; answer: string; serviceName?: string }
-  | { type: "custom"; id: string; title: string; answer: string; serviceName?: string }
-  | { type: "other"; id: "other"; title: string; answer: string; serviceName?: string };
+const steps: { id: FlowStep; label: string }[] = [
+  { id: "details", label: "Your Info" },
+  { id: "intent", label: "Intent" },
+  { id: "selection", label: "Selection" },
+  { id: "slot", label: "Time Slot" },
+  { id: "success", label: "Done" },
+];
 
-function formatSlot(slot: Slot) {
-  const start = new Date(slot.startsAt);
-  const end = new Date(slot.endsAt);
-  return `${start.toLocaleString([], {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  })} - ${end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
-}
-
-function serviceLine(service: Service) {
-  const parts = [
-    service.description,
-    service.price ? `Price: ${service.price}` : null,
-    service.duration ? `Duration: ${service.duration}` : null,
-  ].filter(Boolean);
-  return parts.length
-    ? parts.join(" • ")
-    : "The team will confirm the details for this service.";
+function asWorkspace(payload: unknown): PublicWorkspace | null {
+  if (!payload || typeof payload !== "object") return null;
+  const record = payload as Record<string, unknown>;
+  const maybeWorkspace = record.workspace && typeof record.workspace === "object" ? (record.workspace as Record<string, unknown>) : record;
+  if (typeof maybeWorkspace.id !== "string") return null;
+  return maybeWorkspace as unknown as PublicWorkspace;
 }
 
 function emailLooksValid(value: string) {
   return /^\S+@\S+\.\S+$/.test(value.trim());
 }
 
-// Step indicator labels
-const STEPS: FlowStep[] = ["details", "intent", "booking", "slots", "success"];
-const STEP_LABELS: Record<string, string> = {
-  details: "Your Info",
-  intent: "Intent",
-  enquiry: "Enquiry",
-  booking: "Service",
-  slots: "Pick Time",
-  success: "Done",
-};
-
-// AI-themed animated background component
-function AIBackground() {
-  return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-      {/* Base deep dark gradient */}
-      <div className="absolute inset-0 bg-[#030712]" />
-
-      {/* Animated neural network nodes */}
-      <svg className="absolute inset-0 w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#6366f1" stopOpacity="1" />
-            <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        {/* Moving connection lines */}
-        <line x1="10%" y1="20%" x2="30%" y2="45%" stroke="rgba(99,102,241,0.3)" strokeWidth="1" className="animate-[dash_8s_linear_infinite]" strokeDasharray="6 6" />
-        <line x1="30%" y1="45%" x2="60%" y2="25%" stroke="rgba(139,92,246,0.3)" strokeWidth="1" strokeDasharray="6 6" className="animate-[dash_10s_linear_infinite_reverse]" />
-        <line x1="60%" y1="25%" x2="85%" y2="55%" stroke="rgba(99,102,241,0.25)" strokeWidth="1" strokeDasharray="6 6" className="animate-[dash_12s_linear_infinite]" />
-        <line x1="85%" y1="55%" x2="70%" y2="80%" stroke="rgba(168,85,247,0.3)" strokeWidth="1" strokeDasharray="4 8" className="animate-[dash_9s_linear_infinite_reverse]" />
-        <line x1="20%" y1="70%" x2="45%" y2="60%" stroke="rgba(99,102,241,0.2)" strokeWidth="1" strokeDasharray="6 6" className="animate-[dash_11s_linear_infinite]" />
-        <line x1="45%" y1="60%" x2="65%" y2="75%" stroke="rgba(139,92,246,0.25)" strokeWidth="1" strokeDasharray="8 4" className="animate-[dash_7s_linear_infinite_reverse]" />
-        <line x1="5%" y1="50%" x2="25%" y2="30%" stroke="rgba(99,102,241,0.2)" strokeWidth="1" strokeDasharray="5 7" className="animate-[dash_13s_linear_infinite]" />
-        <line x1="75%" y1="15%" x2="90%" y2="35%" stroke="rgba(168,85,247,0.2)" strokeWidth="1" strokeDasharray="6 6" className="animate-[dash_8s_linear_infinite]" />
-
-        {/* Node dots */}
-        {[
-          { cx: "10%", cy: "20%", r: 4, delay: "0s" },
-          { cx: "30%", cy: "45%", r: 3, delay: "1s" },
-          { cx: "60%", cy: "25%", r: 5, delay: "2s" },
-          { cx: "85%", cy: "55%", r: 3, delay: "0.5s" },
-          { cx: "70%", cy: "80%", r: 4, delay: "1.5s" },
-          { cx: "20%", cy: "70%", r: 3, delay: "3s" },
-          { cx: "45%", cy: "60%", r: 4, delay: "2.5s" },
-          { cx: "65%", cy: "75%", r: 3, delay: "0.8s" },
-          { cx: "5%", cy: "50%", r: 3, delay: "1.2s" },
-          { cx: "75%", cy: "15%", r: 4, delay: "3.5s" },
-          { cx: "90%", cy: "35%", r: 3, delay: "0.3s" },
-          { cx: "25%", cy: "30%", r: 4, delay: "2.2s" },
-          { cx: "50%", cy: "88%", r: 3, delay: "1.8s" },
-          { cx: "15%", cy: "88%", r: 3, delay: "0.6s" },
-          { cx: "92%", cy: "78%", r: 4, delay: "2.8s" },
-        ].map((n, i) => (
-          <circle
-            key={i}
-            cx={n.cx}
-            cy={n.cy}
-            r={n.r}
-            fill="rgba(99,102,241,0.7)"
-            style={{ animation: `pulse-node 3s ease-in-out ${n.delay} infinite` }}
-          />
-        ))}
-      </svg>
-
-      {/* Large ambient glows */}
-      <div
-        className="absolute rounded-full opacity-30"
-        style={{
-          width: "50vw", height: "50vw",
-          left: "-15vw", top: "-10vw",
-          background: "radial-gradient(circle, rgba(99,102,241,0.5) 0%, transparent 70%)",
-          animation: "float-slow 20s ease-in-out infinite alternate",
-          filter: "blur(60px)",
-        }}
-      />
-      <div
-        className="absolute rounded-full opacity-20"
-        style={{
-          width: "40vw", height: "40vw",
-          right: "-10vw", bottom: "-5vw",
-          background: "radial-gradient(circle, rgba(168,85,247,0.6) 0%, transparent 70%)",
-          animation: "float-slow 25s ease-in-out infinite alternate-reverse",
-          filter: "blur(60px)",
-        }}
-      />
-      <div
-        className="absolute rounded-full opacity-15"
-        style={{
-          width: "30vw", height: "30vw",
-          left: "40vw", top: "30vh",
-          background: "radial-gradient(circle, rgba(16,185,129,0.4) 0%, transparent 70%)",
-          animation: "float-slow 18s ease-in-out 5s infinite alternate",
-          filter: "blur(50px)",
-        }}
-      />
-
-      {/* Floating AI particles */}
-      {[
-        { top: "8%", left: "12%", size: 8, delay: "0s", dur: "6s" },
-        { top: "15%", left: "75%", size: 6, delay: "1s", dur: "7s" },
-        { top: "35%", left: "88%", size: 5, delay: "2s", dur: "8s" },
-        { top: "55%", left: "5%", size: 7, delay: "1.5s", dur: "6.5s" },
-        { top: "72%", left: "60%", size: 6, delay: "3s", dur: "7.5s" },
-        { top: "82%", left: "25%", size: 5, delay: "0.5s", dur: "9s" },
-        { top: "90%", left: "80%", size: 8, delay: "2.5s", dur: "6s" },
-        { top: "48%", left: "48%", size: 4, delay: "4s", dur: "8s" },
-        { top: "25%", left: "38%", size: 5, delay: "1.2s", dur: "7s" },
-        { top: "65%", left: "92%", size: 6, delay: "3.5s", dur: "6.5s" },
-        { top: "42%", left: "18%", size: 4, delay: "0.8s", dur: "9s" },
-        { top: "78%", left: "44%", size: 5, delay: "2.8s", dur: "7.5s" },
-      ].map((p, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            top: p.top, left: p.left,
-            width: p.size, height: p.size,
-            background: i % 3 === 0
-              ? "rgba(99,102,241,0.8)"
-              : i % 3 === 1
-              ? "rgba(168,85,247,0.8)"
-              : "rgba(16,185,129,0.7)",
-            boxShadow: `0 0 ${p.size * 3}px ${i % 3 === 0 ? "rgba(99,102,241,0.6)" : i % 3 === 1 ? "rgba(168,85,247,0.6)" : "rgba(16,185,129,0.5)"}`,
-            animation: `float-particle ${p.dur} ${p.delay} ease-in-out infinite alternate`,
-          }}
-        />
-      ))}
-
-      {/* Moving gradient scan line */}
-      <div
-        className="absolute top-0 left-0 w-full h-[2px] opacity-40"
-        style={{
-          background: "linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.8) 40%, rgba(168,85,247,0.8) 60%, transparent 100%)",
-          animation: "scan-vertical 12s linear infinite",
-        }}
-      />
-
-      {/* Grid overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: "linear-gradient(rgba(99,102,241,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.5) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
-
-      <style>{`
-        @keyframes float-slow {
-          0% { transform: translate(0, 0) scale(1); }
-          100% { transform: translate(30px, -20px) scale(1.05); }
-        }
-        @keyframes float-particle {
-          0% { transform: translate(0, 0) scale(1); opacity: 0.6; }
-          50% { opacity: 1; }
-          100% { transform: translate(15px, -25px) scale(1.2); opacity: 0.6; }
-        }
-        @keyframes pulse-node {
-          0%, 100% { opacity: 0.4; r: attr(r); }
-          50% { opacity: 1; }
-        }
-        @keyframes scan-vertical {
-          0% { transform: translateY(-2px); }
-          100% { transform: translateY(100vh); }
-        }
-        @keyframes dash {
-          to { stroke-dashoffset: -100; }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeInScale {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        @keyframes rotate-ring {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes counter-rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(-360deg); }
-        }
-        @keyframes glow-pulse {
-          0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,0.3), 0 0 40px rgba(99,102,241,0.1); }
-          50% { box-shadow: 0 0 30px rgba(99,102,241,0.5), 0 0 60px rgba(99,102,241,0.2); }
-        }
-        .step-animate { animation: slideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
-        .card-glow { animation: glow-pulse 4s ease-in-out infinite; }
-      `}</style>
-    </div>
-  );
+function cleanAnswer(value?: string | null) {
+  return (value || "The team will confirm the best details for this option.").replace(/\s+/g, " ").trim();
 }
 
-// Progress bar
-function ProgressBar({ step }: { step: FlowStep }) {
-  const flowOrder: FlowStep[] = ["details", "intent", "enquiry", "booking", "slots", "success"];
-  const idx = flowOrder.indexOf(step);
-  const totalSteps = 5;
-  const progress = Math.min(((idx) / (totalSteps - 1)) * 100, 100);
+function slotLabel(slot: Slot) {
+  const start = new Date(slot.startsAt);
+  const end = new Date(slot.endsAt);
+  const date = start.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  const time = `${start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} - ${end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+  return { date, time };
+}
 
+function optionFromService(service: Service): SelectedOption {
+  const parts = [service.description, service.price ? `Price: ${service.price}` : null, service.duration ? `Duration: ${service.duration}` : null].filter(Boolean);
+  return {
+    type: "service",
+    id: service.id,
+    title: service.name,
+    answer: parts.length ? parts.join(". ") : "The team will confirm the best details for this service.",
+    serviceName: service.name,
+  };
+}
+
+function optionFromFAQ(faq: FAQ): SelectedOption {
+  return { type: "faq", id: faq.id, title: faq.question, answer: faq.answer, serviceName: faq.question };
+}
+
+function isOtherOption(option: SelectedOption | null) {
+  if (!option) return false;
+  const title = option.title.toLowerCase();
+  return option.type === "other" || title === "other" || title.includes("other enquiry") || title.includes("custom");
+}
+
+function StepProgress({ step }: { step: FlowStep }) {
+  const activeIndex = Math.max(steps.findIndex((item) => item.id === step), 0);
   return (
-    <div className="w-full mb-6">
-      <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{
-            width: `${progress}%`,
-            background: "linear-gradient(90deg, #6366f1, #a855f7, #10b981)",
-          }}
+    <div className="mb-8">
+      <div className="relative h-1 rounded-full bg-white/10">
+        <motion.div
+          className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-cyan-400"
+          initial={false}
+          animate={{ width: `${(activeIndex / (steps.length - 1)) * 100}%` }}
+          transition={{ type: "spring", stiffness: 120, damping: 22 }}
         />
       </div>
-      <div className="flex justify-between mt-2">
-        {["Your Info", "Intent", "Selection", "Time Slot", "Done"].map((label, i) => (
-          <span
-            key={label}
-            className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${i <= idx - 1 ? "text-indigo-400" : i === idx ? "text-white" : "text-white/20"}`}
-          >
-            {label}
+      <div className="mt-3 grid grid-cols-5 text-[10px] font-black uppercase tracking-[.18em]">
+        {steps.map((item, index) => (
+          <span key={item.id} className={index <= activeIndex ? "text-indigo-200" : "text-white/24"}>
+            {item.label}
           </span>
         ))}
       </div>
@@ -361,68 +123,79 @@ function ProgressBar({ step }: { step: FlowStep }) {
   );
 }
 
-// Input field component
-function Field({
-  icon, label, value, onChange, placeholder, type = "text"
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  type?: string;
-}) {
-  const [focused, setFocused] = useState(false);
+function InputField({ icon, label, value, onChange, placeholder, type = "text" }: { icon: ReactNode; label: string; value: string; onChange: (value: string) => void; placeholder: string; type?: string }) {
   return (
     <label className="block">
-      <span className="text-xs font-bold uppercase tracking-wider text-white/50 mb-2 block">{label}</span>
-      <div
-        className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 transition-all duration-200 ${
-          focused
-            ? "bg-white/10 ring-1 ring-indigo-500/60 shadow-[0_0_20px_rgba(99,102,241,0.15)]"
-            : "bg-white/5 ring-1 ring-white/10 hover:bg-white/8"
-        }`}
-      >
-        <span className={`transition-colors ${focused ? "text-indigo-400" : "text-white/30"}`}>{icon}</span>
+      <span className="mb-2 block text-[11px] font-black uppercase tracking-[.18em] text-white/40">{label}</span>
+      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.045] px-4 py-3.5 transition hover:border-indigo-300/30 hover:bg-white/[.07] focus-within:border-indigo-300/60 focus-within:bg-white/[.08]">
+        <span className="text-white/32">{icon}</span>
         <input
           type={type}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="w-full bg-transparent text-sm text-white placeholder:text-white/25 outline-none font-medium"
+          className="w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-white/22"
         />
       </div>
     </label>
   );
 }
 
-// Primary button
-function PrimaryButton({
-  children, onClick, type = "button", disabled = false, variant = "indigo"
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  type?: "button" | "submit";
-  disabled?: boolean;
-  variant?: "indigo" | "emerald" | "ghost";
-}) {
-  const bg = variant === "indigo"
-    ? "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-[0_4px_24px_rgba(99,102,241,0.4)]"
-    : variant === "emerald"
-    ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-[0_4px_24px_rgba(16,185,129,0.4)]"
-    : "bg-white/8 hover:bg-white/12 ring-1 ring-white/15";
-
+function PrimaryButton({ children, onClick, disabled = false, tone = "indigo" }: { children: ReactNode; onClick?: () => void; disabled?: boolean; tone?: "indigo" | "emerald" | "ghost" }) {
+  const classes = tone === "emerald"
+    ? "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-[0_16px_42px_rgba(16,185,129,.24)] hover:shadow-[0_18px_52px_rgba(16,185,129,.34)]"
+    : tone === "ghost"
+      ? "border border-white/10 bg-white/[.05] hover:bg-white/[.08]"
+      : "bg-gradient-to-r from-indigo-500 to-violet-500 shadow-[0_16px_42px_rgba(99,102,241,.28)] hover:shadow-[0_18px_52px_rgba(99,102,241,.4)]";
   return (
     <button
-      type={type}
+      type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`w-full inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-black text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${bg}`}
+      className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-black text-white transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-45 ${classes}`}
     >
       {children}
     </button>
+  );
+}
+
+function OptionCard({ option, selected, onClick, color = "indigo" }: { option: SelectedOption; selected: boolean; onClick: () => void; color?: "indigo" | "emerald" }) {
+  return (
+    <motion.button
+      type="button"
+      whileHover={{ y: -3, rotateX: 1.5, rotateY: -1.5 }}
+      whileTap={{ scale: 0.985 }}
+      onClick={onClick}
+      className={`w-full rounded-3xl border p-5 text-left transition ${
+        selected
+          ? color === "emerald"
+            ? "border-emerald-300/45 bg-emerald-400/10 shadow-[0_18px_70px_rgba(16,185,129,.14)]"
+            : "border-indigo-300/45 bg-indigo-400/10 shadow-[0_18px_70px_rgba(99,102,241,.16)]"
+          : "border-white/10 bg-white/[.045] hover:border-white/20 hover:bg-white/[.07]"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-black text-white">{option.title}</h3>
+          <p className="mt-2 line-clamp-3 text-xs leading-6 text-white/48">{option.answer}</p>
+        </div>
+        {selected ? <CheckCircle2 className={color === "emerald" ? "h-5 w-5 text-emerald-300" : "h-5 w-5 text-indigo-300"} /> : <Sparkles className="h-5 w-5 text-white/18" />}
+      </div>
+    </motion.button>
+  );
+}
+
+function ReplyBox({ loading, reply }: { loading: boolean; reply: string }) {
+  return (
+    <div className="rounded-3xl border border-cyan-300/18 bg-cyan-300/[.055] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,.05)]">
+      <div className="mb-3 flex items-center gap-2 text-[11px] font-black uppercase tracking-[.18em] text-cyan-200">
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+        {loading ? "Please wait..." : "Helpful details"}
+      </div>
+      <div className="rounded-2xl bg-black/18 px-4 py-4 text-sm font-medium leading-7 text-white/78">
+        {loading ? "Please wait..." : reply}
+      </div>
+    </div>
   );
 }
 
@@ -432,246 +205,162 @@ export default function PublicBookingPage() {
 
   const [workspace, setWorkspace] = useState<PublicWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState<BookingResponse | null>(null);
   const [step, setStep] = useState<FlowStep>("details");
   const [intent, setIntent] = useState<Intent>("");
-  const [selectedEnquiry, setSelectedEnquiry] = useState<SelectedEnquiry | null>(null);
-  const [assistantReply, setAssistantReply] = useState("");
-  const [assistantLoading, setAssistantLoading] = useState(false);
-  const [assistantMode, setAssistantMode] = useState<"" | "service" | "enquiry">("");
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    serviceNeeded: "",
-    slotId: "",
-    preferredTime: "",
-    message: "",
-  });
+  const [selectedOption, setSelectedOption] = useState<SelectedOption | null>(null);
+  const [reply, setReply] = useState("");
+  const [replyLoading, setReplyLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState<FormState>({ name: "", email: "", phone: "", message: "", slotId: "", website: "" });
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetch(`/api/public/workspaces/${workspaceId}`, { cache: "no-store" });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "This booking page is not available yet.");
-        setWorkspace(data.workspace);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "This booking page is not available yet.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    if (workspaceId) load();
+    if (!workspaceId) return;
+    let alive = true;
+    setLoading(true);
+    fetch(`/api/public/workspaces/${workspaceId}`, { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json()) as unknown;
+        if (!response.ok) throw new Error("Booking page is not available right now.");
+        const data = asWorkspace(payload);
+        if (!data) throw new Error("Booking page is not available right now.");
+        if (alive) setWorkspace(data);
+      })
+      .catch((caught: unknown) => {
+        if (alive) setError(caught instanceof Error ? caught.message : "Booking page is not available right now.");
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, [workspaceId]);
 
   const business = workspace?.businessProfile;
   const businessName = business?.name || workspace?.name || "this business";
   const services = business?.services || [];
   const faqs = business?.faqs || [];
-  const slots = workspace?.bookingSlots || [];
-  const selectedSlot = useMemo(() => slots.find((slot) => slot.id === form.slotId), [slots, form.slotId]);
-  const selectedService = useMemo(() => services.find((service) => service.name === form.serviceNeeded), [form.serviceNeeded, services]);
-  const funnelOptionPages = workspace?.funnelOptionPages || [];
-  const bookingOptionPage = useMemo(
-    () => funnelOptionPages.find((page) => ["BOOKING", "BOTH"].includes(page.intent) && page.options?.length),
-    [funnelOptionPages],
-  );
-  const enquiryOptionPage = useMemo(
-    () => funnelOptionPages.find((page) => ["ENQUIRY", "BOTH"].includes(page.intent) && page.options?.length),
-    [funnelOptionPages],
-  );
+  const slots = useMemo(() => [...(workspace?.bookingSlots || [])].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()), [workspace?.bookingSlots]);
+  const selectedSlot = slots.find((slot) => slot.id === form.slotId);
 
-  const enquiryOptions: SelectedEnquiry[] = useMemo(() => {
-    if (enquiryOptionPage?.options?.length) {
-      return [
-        ...enquiryOptionPage.options.map((option) => ({
-          type: "custom" as const,
-          id: option.id,
-          title: option.title,
-          answer: option.answer,
-          serviceName: option.serviceName || option.title,
-        })),
-        { type: "other" as const, id: "other" as const, title: "Other enquiry", answer: "Share your question below and the team will review it." },
-      ];
-    }
-    const faqOptions = faqs.slice(0, 8).map((faq) => ({
-      type: "faq" as const, id: faq.id, title: faq.question, answer: faq.answer, serviceName: faq.question,
-    }));
-    const serviceOptions = services.slice(0, 8).map((service) => ({
-      type: "service" as const, id: service.id, title: service.name, answer: serviceLine(service), serviceName: service.name,
-    }));
-    return [
-      ...faqOptions, ...serviceOptions,
-      { type: "other" as const, id: "other" as const, title: "Other enquiry", answer: "Share your question below and the team will review it." },
-    ];
-  }, [faqs, services, enquiryOptionPage]);
+  const enquiryPage = workspace?.funnelOptionPages?.find((page) => ["ENQUIRY", "BOTH"].includes(page.intent) && page.options?.length);
+  const bookingPage = workspace?.funnelOptionPages?.find((page) => ["BOOKING", "BOTH"].includes(page.intent) && page.options?.length);
 
-  const bookingOptions: SelectedEnquiry[] = useMemo(() => {
-    if (bookingOptionPage?.options?.length) {
-      return bookingOptionPage.options.map((option) => ({
-        type: "custom" as const,
-        id: option.id,
-        title: option.title,
-        answer: option.answer,
-        serviceName: option.serviceName || option.title,
-      }));
-    }
-    return services.map((service) => ({
-      type: "service" as const,
-      id: service.id,
-      title: service.name,
-      answer: serviceLine(service),
-      serviceName: service.name,
-    }));
-  }, [bookingOptionPage, services]);
+  const enquiryOptions = useMemo<SelectedOption[]>(() => {
+    const custom = enquiryPage?.options?.map((option) => ({ type: "custom", id: option.id, title: option.title, answer: cleanAnswer(option.answer), serviceName: option.serviceName || option.title })) || [];
+    const fallback = [...faqs.slice(0, 5).map(optionFromFAQ), ...services.slice(0, 5).map(optionFromService)];
+    return [...(custom.length ? custom : fallback), { type: "other", id: "other-enquiry", title: "Other / Custom request", answer: "Tell us what you need help with and the team will check the best solution.", serviceName: "Other / Custom request" }];
+  }, [enquiryPage?.options, faqs, services]);
 
-  function update(key: keyof typeof form, value: string) {
+  const bookingOptions = useMemo<SelectedOption[]>(() => {
+    const custom = bookingPage?.options?.map((option) => ({ type: "custom", id: option.id, title: option.title, answer: cleanAnswer(option.answer), serviceName: option.serviceName || option.title })) || [];
+    const fallback = services.slice(0, 8).map(optionFromService);
+    return [...(custom.length ? custom : fallback), { type: "other", id: "other-booking", title: "Other / Custom booking", answer: "Tell us what you need help with and choose a slot so the team can understand your requirement.", serviceName: "Other / Custom booking" }];
+  }, [bookingPage?.options, services]);
+
+  const currentOptions = intent === "booking" ? bookingOptions : enquiryOptions;
+
+  function updateForm(key: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function generateOptionReply(args: {
-    mode: "service" | "enquiry"; title: string; savedAnswer: string; serviceName?: string;
-  }) {
-    setAssistantMode(args.mode);
-    setAssistantLoading(true);
-    setAssistantReply("");
+  async function loadReply(option: SelectedOption, nextIntent: Intent) {
+    setReplyLoading(true);
+    setReply("");
     try {
-      const prompt = args.mode === "service"
-        ? [
-            `The prospect selected this booking option: ${args.title}.`,
-            `Owner-saved answer for this option: ${args.savedAnswer}`,
-            "Analyze the selected option and owner-saved answer. Reply as a helpful business receptionist using only saved business details. Keep it clear, short, and related to this business. Then ask one short next question about the prospect's requirement before booking slots.",
-          ].join("\n")
-        : [
-            `The prospect selected this enquiry option: ${args.title}.`,
-            `Owner-saved answer for this option: ${args.savedAnswer}`,
-            "Analyze the selected option and owner-saved answer. Reply as a helpful business receptionist using only saved business details. Keep it clear, short, and related to this business. Then ask whether they want to book an available slot for this.",
-          ].join("\n");
-
-      const res = await fetch("/api/public/assistant", {
+      const response = await fetch("/api/public/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          workspaceId, message: prompt,
-          form: { name: form.name, email: form.email, phone: form.phone, serviceNeeded: args.serviceName || form.serviceNeeded || args.title, message: form.message, preferredTime: form.preferredTime },
+          workspaceId,
+          businessName,
+          intent: nextIntent,
+          selectedOption: option.title,
+          optionTitle: option.title,
+          savedAnswer: option.answer,
+          answer: option.answer,
+          serviceName: option.serviceName || option.title,
+          question: isOtherOption(option) ? "The prospect selected Other / Custom request." : "The prospect selected this option.",
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "AI response failed.");
-      setAssistantReply(data.reply || args.savedAnswer);
-    } catch (err) {
-      console.warn("Option AI response failed:", err);
-      setAssistantReply(args.savedAnswer);
+      const payload = (await response.json()) as Record<string, unknown>;
+      const cleanReply = typeof payload.reply === "string" ? payload.reply : typeof payload.answer === "string" ? payload.answer : typeof payload.message === "string" ? payload.message : "";
+      setReply(cleanReply || fallbackReply(option));
+    } catch {
+      setReply(fallbackReply(option));
     } finally {
-      setAssistantLoading(false);
+      setReplyLoading(false);
     }
   }
 
-  function validateDetails() {
-    if (!form.name.trim()) return "Name is required.";
-    if (!form.phone.trim()) return "Phone number is required.";
-    if (!form.email.trim()) return "Email is required.";
-    if (!emailLooksValid(form.email)) return "Enter a valid email address.";
-    return "";
-  }
-
-  function continueFromDetails(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const validation = validateDetails();
-    if (validation) { setError(validation); return; }
-    setError("");
-    setStep("intent");
+  function fallbackReply(option: SelectedOption) {
+    if (isOtherOption(option)) {
+      return "Thanks, we can check this with the team. Tell us what you need help with, then choose a suitable time so we can understand your requirement and confirm the best solution.";
+    }
+    return `${option.title} helps with ${option.answer} Tell us a little more about what you need so we can recommend the best available time.`;
   }
 
   function chooseIntent(nextIntent: Intent) {
     setIntent(nextIntent);
-    setError("");
-    setAssistantReply("");
-    setAssistantMode("");
-    if (nextIntent === "enquiry") setStep("enquiry");
-    if (nextIntent === "booking") setStep("booking");
+    setSelectedOption(null);
+    setReply("");
+    setForm((prev) => ({ ...prev, message: "", slotId: "" }));
+    setStep("selection");
   }
 
-  function chooseBookingOption(option: SelectedEnquiry) {
-    update("serviceNeeded", option.serviceName || option.title);
-    setSelectedEnquiry(option.type === "custom" ? option : null);
-    setError("");
-    generateOptionReply({ mode: "service", title: option.title, savedAnswer: option.answer, serviceName: option.serviceName || option.title });
+  function chooseOption(option: SelectedOption) {
+    setSelectedOption(option);
+    setForm((prev) => ({ ...prev, message: isOtherOption(option) ? "" : prev.message }));
+    setStep("requirement");
+    void loadReply(option, intent || "booking");
   }
 
-  function chooseService(service: Service) {
-    chooseBookingOption({ type: "service", id: service.id, title: service.name, answer: serviceLine(service), serviceName: service.name });
+  function detailsValid() {
+    return form.name.trim().length >= 2 && form.phone.trim().length >= 6 && emailLooksValid(form.email);
   }
 
-  function chooseEnquiry(option: SelectedEnquiry) {
-    setSelectedEnquiry(option);
-    setError("");
-    if (option.serviceName) update("serviceNeeded", option.serviceName);
-    generateOptionReply({ mode: "enquiry", title: option.title, savedAnswer: option.answer, serviceName: option.serviceName || form.serviceNeeded });
-  }
-
-  function goToSlotsFromBooking(e?: React.FormEvent<HTMLFormElement>) {
-    e?.preventDefault();
-    if (!form.serviceNeeded.trim()) { setError("Please choose a service first."); return; }
-    if (!form.message.trim()) { setError("Please add a few details so the team knows what you need."); return; }
-    setError("");
-    setStep("slots");
-  }
-
-  function goToSlotsFromEnquiry() {
-    if (!selectedEnquiry) { setError("Please choose an enquiry option first."); return; }
-    const fallbackService = selectedEnquiry.serviceName || selectedEnquiry.title;
-    setForm((prev) => ({
-      ...prev,
-      serviceNeeded: prev.serviceNeeded || fallbackService,
-      message: prev.message || `Enquiry selected: ${selectedEnquiry.title}\nSaved answer: ${selectedEnquiry.answer}`,
-    }));
-    setError("");
-    setStep("slots");
-  }
-
-  async function submitRequest(options?: { withoutSlot?: boolean }) {
+  async function submitBooking() {
+    if (!selectedOption) return;
+    if (!form.message.trim()) {
+      setError("Please share a few details about what you need.");
+      return;
+    }
     setSubmitting(true);
     setError("");
-    setSuccess(null);
     try {
-      if (!form.name.trim() || !form.phone.trim() || !form.email.trim()) throw new Error("Name, phone, and email are required.");
-      const wantsSlot = !options?.withoutSlot;
-      if (wantsSlot && !form.slotId) throw new Error("Please choose an available time.");
-
-      const enquiryText = selectedEnquiry
-        ? [`Selected option: ${selectedEnquiry.title}`, `Saved answer: ${selectedEnquiry.answer}`].join("\n")
-        : null;
-
-      const message = [
-        intent ? `Prospect selected: ${intent === "booking" ? "I want to book" : "I have an enquiry"}` : null,
-        enquiryText,
-        selectedService ? `Selected service details: ${serviceLine(selectedService)}` : null,
-        form.message ? `Prospect message: ${form.message}` : null,
-      ].filter(Boolean).join("\n\n");
-
-      const res = await fetch("/api/public/bookings", {
+      const response = await fetch("/api/public/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          workspaceId, name: form.name, email: form.email, phone: form.phone,
-          serviceNeeded: form.serviceNeeded || selectedEnquiry?.title || "General enquiry",
-          preferredTime: selectedSlot ? formatSlot(selectedSlot) : form.preferredTime,
-          message: message || "New guided funnel request",
-          slotId: wantsSlot ? form.slotId : "",
+          workspaceId,
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          website: form.website,
+          intent,
+          source: "public_booking_page",
+          selectedOptionId: selectedOption.id,
+          selectedOptionTitle: selectedOption.title,
+          selectedOption: selectedOption.title,
+          optionTitle: selectedOption.title,
+          selectedOptionAnswer: selectedOption.answer,
+          serviceNeeded: selectedOption.serviceName || selectedOption.title,
+          requirements: form.message,
+          requirement: form.message,
+          message: form.message,
+          slotId: form.slotId,
+          preferredTime: selectedSlot ? `${slotLabel(selectedSlot).date} ${slotLabel(selectedSlot).time}` : "Team will confirm",
+          startsAt: selectedSlot?.startsAt,
+          endsAt: selectedSlot?.endsAt,
+          customRequest: isOtherOption(selectedOption) ? form.message : undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to submit your request.");
-      setSuccess(data);
+      const payload = (await response.json()) as Record<string, unknown>;
+      if (!response.ok || payload.error) throw new Error(typeof payload.error === "string" ? payload.error : "Could not submit your request.");
       setStep("success");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit your request.");
+    } catch (caught: unknown) {
+      setError(caught instanceof Error ? caught.message : "Could not submit your request.");
     } finally {
       setSubmitting(false);
     }
@@ -679,506 +368,199 @@ export default function PublicBookingPage() {
 
   if (loading) {
     return (
-      <>
-        <AIBackground />
-        <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
-          <div className="flex flex-col items-center gap-4">
-            {/* Spinning AI ring loader */}
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20" />
-              <div
-                className="absolute inset-0 rounded-full border-2 border-transparent border-t-indigo-500"
-                style={{ animation: "rotate-ring 1s linear infinite" }}
-              />
-              <div className="absolute inset-3 flex items-center justify-center">
-                <Brain className="h-5 w-5 text-indigo-400" />
-              </div>
-            </div>
-            <p className="text-sm font-bold text-white/50 tracking-wide">Loading booking page...</p>
-          </div>
+      <PremiumMotionBackground>
+        <main className="flex min-h-screen items-center justify-center px-6">
+          <GlassPanel className="p-8 text-center">
+            <Loader2 className="mx-auto h-7 w-7 animate-spin text-indigo-300" />
+            <p className="mt-4 text-sm font-bold text-white/60">Please wait...</p>
+          </GlassPanel>
         </main>
-      </>
+      </PremiumMotionBackground>
     );
   }
 
   if (error && !workspace) {
     return (
-      <>
-        <AIBackground />
-        <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
-          <div className="max-w-md rounded-3xl bg-white/5 ring-1 ring-white/10 p-8 text-center backdrop-blur-xl">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/15 ring-1 ring-red-500/30">
-              <Zap className="h-6 w-6 text-red-400" />
-            </div>
-            <h1 className="text-xl font-black text-white">Booking page unavailable</h1>
-            <p className="mt-3 text-sm text-white/50 leading-6">{error}</p>
-          </div>
+      <PremiumMotionBackground>
+        <main className="flex min-h-screen items-center justify-center px-6">
+          <GlassPanel className="max-w-md p-8 text-center">
+            <h1 className="text-2xl font-black">Booking page unavailable</h1>
+            <p className="mt-3 text-sm leading-7 text-white/55">{error}</p>
+          </GlassPanel>
         </main>
-      </>
+      </PremiumMotionBackground>
     );
   }
 
   return (
-    <>
-      <AIBackground />
-      <main className="relative z-10 min-h-screen px-4 py-8 sm:py-12">
-        <div className="mx-auto max-w-2xl">
+    <PremiumMotionBackground>
+      <main className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <header className="mb-8 text-center">
+          <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="signature-font text-3xl text-amber-200/90 sm:text-4xl">
+            Let&apos;s Connect
+          </motion.p>
+          <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mt-2 text-4xl font-black tracking-tight text-white sm:text-6xl">
+            Book with <span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-cyan-200 bg-clip-text text-transparent">{businessName}</span>
+          </motion.h1>
+          <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-white/48">
+            Share your details, choose enquiry or booking, and confirm the best available slot.
+          </p>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.05] px-4 py-2 text-xs font-bold text-white/58">
+            <ShieldCheck className="h-4 w-4 text-emerald-300" /> Secure and confidential
+          </div>
+        </header>
 
-          {/* Header */}
-          <header className="mb-6 step-animate">
-            {/* AI badge */}
-            <div className="flex justify-center mb-5">
-              <div className="inline-flex items-center gap-2 rounded-full bg-indigo-500/15 px-4 py-2 ring-1 ring-indigo-500/30 backdrop-blur-sm">
-                <div className="relative">
-                  <Brain className="h-4 w-4 text-indigo-400" />
-                  <div className="absolute inset-0 rounded-full animate-ping bg-indigo-400/30" style={{ animationDuration: "2s" }} />
-                </div>
-                <span className="text-xs font-black uppercase tracking-[0.18em] text-indigo-300">AI Booking Assistant</span>
-                <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-              </div>
-            </div>
+        <GlassPanel className="mx-auto max-w-5xl p-5 sm:p-8">
+          <StepProgress step={step} />
 
-            {/* Business name */}
-            <div className="text-center mb-6">
-              <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                Book with{" "}
-                <span
-                  className="inline-block"
-                  style={{
-                    background: "linear-gradient(135deg, #a5b4fc, #8b5cf6, #ec4899)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  {businessName}
-                </span>
-              </h1>
-              <p className="mt-2 text-sm text-white/40 leading-6 max-w-md mx-auto">
-                Share your details, choose enquiry or booking, and our AI will guide you to the perfect slot.
-              </p>
-            </div>
+          {error && <div className="mb-5 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-100">{error}</div>}
 
-            {/* Business meta pills */}
-            {(business?.location || business?.workingHours || business?.contactPhone) && (
-              <div className="flex flex-wrap justify-center gap-2 mb-6">
-                {business?.location && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs font-medium text-white/60 ring-1 ring-white/10">
-                    <MapPin className="h-3 w-3" /> {business.location}
-                  </span>
-                )}
-                {business?.workingHours && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs font-medium text-white/60 ring-1 ring-white/10">
-                    <Clock className="h-3 w-3" /> {business.workingHours}
-                  </span>
-                )}
-                {business?.contactPhone && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs font-medium text-white/60 ring-1 ring-white/10">
-                    <Phone className="h-3 w-3" /> {business.contactPhone}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Progress bar */}
-            <ProgressBar step={step} />
-          </header>
-
-          {/* Error banner */}
-          {error && workspace && (
-            <div className="mb-4 rounded-2xl bg-red-500/10 ring-1 ring-red-500/30 px-4 py-3 text-sm font-semibold text-red-300 step-animate">
-              ⚠ {error}
-            </div>
-          )}
-
-          {/* Main card */}
-          <div
-            className="rounded-3xl p-6 sm:p-8 backdrop-blur-xl card-glow step-animate"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-
-            {/* Back button */}
-            {step !== "details" && step !== "success" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setError("");
-                  if (step === "intent") setStep("details");
-                  else if (step === "enquiry" || step === "booking") setStep("intent");
-                  else if (step === "slots") setStep(intent === "enquiry" ? "enquiry" : "booking");
-                }}
-                className="mb-5 inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-xs font-black text-white/50 hover:bg-white/10 hover:text-white/80 transition-all ring-1 ring-white/10"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" /> Back
-              </button>
-            )}
-
-            {/* STEP: Details */}
-            {step === "details" && (
-              <form onSubmit={continueFromDetails} className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-black text-white">First, your details</h2>
-                  <p className="mt-1.5 text-sm text-white/40 leading-6">
-                    This helps the team identify your request instantly.
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  <Field icon={<UserRound className="h-4 w-4" />} label="Full Name" value={form.name} onChange={(v) => update("name", v)} placeholder="Your name" />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field icon={<Phone className="h-4 w-4" />} label="Phone" value={form.phone} onChange={(v) => update("phone", v)} placeholder="+1 555 000 0000" type="tel" />
-                    <Field icon={<Mail className="h-4 w-4" />} label="Email" value={form.email} onChange={(v) => update("email", v)} placeholder="you@email.com" type="email" />
-                  </div>
-                </div>
-                <PrimaryButton type="submit">
+          {step === "details" && (
+            <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-5 md:grid-cols-3">
+              <InputField icon={<UserRound className="h-4 w-4" />} label="Full name" value={form.name} onChange={(value) => updateForm("name", value)} placeholder="Your name" />
+              <InputField icon={<Phone className="h-4 w-4" />} label="Phone" value={form.phone} onChange={(value) => updateForm("phone", value)} placeholder="Your phone number" />
+              <InputField icon={<Mail className="h-4 w-4" />} label="Email" value={form.email} onChange={(value) => updateForm("email", value)} placeholder="you@email.com" type="email" />
+              <input
+                type="text"
+                value={form.website}
+                onChange={(event) => updateForm("website", event.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                className="hidden"
+              />
+              <div className="md:col-span-3 md:ml-auto md:w-56">
+                <PrimaryButton disabled={!detailsValid()} onClick={() => setStep("intent")}>
                   Continue <ArrowRight className="h-4 w-4" />
                 </PrimaryButton>
-              </form>
-            )}
+              </div>
+            </motion.section>
+          )}
 
-            {/* STEP: Intent */}
-            {step === "intent" && (
-              <div className="space-y-6">
+          {step === "intent" && (
+            <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 sm:grid-cols-2">
+              <OptionCard option={{ type: "intent", id: "enquiry", title: "I have an enquiry", answer: "Ask about services, pricing, setup, or your requirement." }} selected={intent === "enquiry"} onClick={() => chooseIntent("enquiry")} />
+              <OptionCard option={{ type: "intent", id: "booking", title: "I want to book", answer: "Choose a service and confirm a suitable time slot." }} selected={intent === "booking"} onClick={() => chooseIntent("booking")} />
+            </motion.section>
+          )}
+
+          {step === "selection" && (
+            <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-black text-white">How can we help?</h2>
-                  <p className="mt-1.5 text-sm text-white/40 leading-6">
-                    Choose an option — you can still book after an enquiry.
-                  </p>
+                  <h2 className="text-2xl font-black text-white">{intent === "booking" ? bookingPage?.title || "Choose a service" : enquiryPage?.title || "What do you need help with?"}</h2>
+                  <p className="mt-2 text-sm text-white/45">{intent === "booking" ? bookingPage?.subtitle || "Select what you want to book." : enquiryPage?.subtitle || "Select the closest option. You can choose Other for custom requests."}</p>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <button
-                    onClick={() => chooseIntent("enquiry")}
-                    className="group relative overflow-hidden rounded-3xl p-6 text-left ring-1 ring-white/10 bg-white/4 hover:ring-indigo-500/50 hover:bg-indigo-500/8 transition-all duration-300"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="relative">
-                      <div className="mb-4 w-12 h-12 rounded-2xl bg-indigo-500/15 ring-1 ring-indigo-500/30 flex items-center justify-center group-hover:ring-indigo-500/60 transition-all">
-                        <HelpCircle className="h-6 w-6 text-indigo-400" />
-                      </div>
-                      <h3 className="text-lg font-black text-white mb-2">I have an enquiry</h3>
-                      <p className="text-sm text-white/40 leading-5">
-                        Choose a topic and get the right business answer.
-                      </p>
-                      <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-indigo-400">
-                        Choose this <ArrowRight className="h-3 w-3" />
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => chooseIntent("booking")}
-                    className="group relative overflow-hidden rounded-3xl p-6 text-left ring-1 ring-white/10 bg-white/4 hover:ring-emerald-500/50 hover:bg-emerald-500/8 transition-all duration-300"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="relative">
-                      <div className="mb-4 w-12 h-12 rounded-2xl bg-emerald-500/15 ring-1 ring-emerald-500/30 flex items-center justify-center group-hover:ring-emerald-500/60 transition-all">
-                        <CalendarCheck className="h-6 w-6 text-emerald-400" />
-                      </div>
-                      <h3 className="text-lg font-black text-white mb-2">I want to book</h3>
-                      <p className="text-sm text-white/40 leading-5">
-                        Pick a service and select your preferred time slot.
-                      </p>
-                      <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-emerald-400">
-                        Choose this <ArrowRight className="h-3 w-3" />
-                      </div>
-                    </div>
-                  </button>
+                <button type="button" onClick={() => setStep("intent")} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/58 hover:bg-white/5">
+                  <ArrowLeft className="h-4 w-4" /> Back
+                </button>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {currentOptions.map((option) => (
+                  <OptionCard key={option.id} option={option} selected={selectedOption?.id === option.id} onClick={() => chooseOption(option)} />
+                ))}
+              </div>
+            </motion.section>
+          )}
+
+          {step === "requirement" && selectedOption && (
+            <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
+              <div className="space-y-4">
+                <OptionCard option={selectedOption} selected onClick={() => setStep("selection")} color="emerald" />
+                <ReplyBox loading={replyLoading} reply={reply || fallbackReply(selectedOption)} />
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/[.045] p-5">
+                <label className="block text-[11px] font-black uppercase tracking-[.18em] text-white/40">What do you need help with?</label>
+                <textarea
+                  value={form.message}
+                  onChange={(event) => updateForm("message", event.target.value)}
+                  rows={8}
+                  maxLength={900}
+                  placeholder={isOtherOption(selectedOption) ? "Tell us your custom request..." : "Example: I want to set this up for my salon / clinic / agency..."}
+                  className="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-black/18 p-4 text-sm font-medium leading-7 text-white outline-none placeholder:text-white/20 focus:border-indigo-300/50"
+                />
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <PrimaryButton tone="ghost" onClick={() => setStep("selection")}>
+                    <ArrowLeft className="h-4 w-4" /> Change option
+                  </PrimaryButton>
+                  <PrimaryButton disabled={!form.message.trim()} onClick={() => setStep("slot")}>
+                    Continue <ArrowRight className="h-4 w-4" />
+                  </PrimaryButton>
                 </div>
               </div>
-            )}
+            </motion.section>
+          )}
 
-            {/* STEP: Enquiry */}
-            {step === "enquiry" && (
-              <div className="space-y-5">
+          {step === "slot" && selectedOption && (
+            <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-black text-white">{enquiryOptionPage?.title || "What's your enquiry?"}</h2>
-                  <p className="mt-1.5 text-sm text-white/40 leading-6">
-                    {enquiryOptionPage?.subtitle || "Select a topic and we will guide you from there."}
-                  </p>
+                  <h2 className="text-2xl font-black text-white">Pick a suitable time</h2>
+                  <p className="mt-2 text-sm text-white/45">{slots.length ? "Choose one of the available slots below." : "Slots will be confirmed by the team."}</p>
                 </div>
-                <div className="space-y-2">
-                  {enquiryOptions.map((option) => {
-                    const isSelected = selectedEnquiry?.id === option.id && selectedEnquiry.type === option.type;
+                <button type="button" onClick={() => setStep("requirement")} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/58 hover:bg-white/5">
+                  <ArrowLeft className="h-4 w-4" /> Back
+                </button>
+              </div>
+
+              {slots.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {slots.map((slot) => {
+                    const label = slotLabel(slot);
+                    const selected = form.slotId === slot.id;
                     return (
                       <button
-                        key={`${option.type}-${option.id}`}
+                        key={slot.id}
                         type="button"
-                        onClick={() => chooseEnquiry(option)}
-                        className={`w-full rounded-2xl px-4 py-3.5 text-left text-sm font-bold transition-all duration-200 ${
-                          isSelected
-                            ? "bg-indigo-500/15 ring-1 ring-indigo-500/50 text-white"
-                            : "bg-white/4 ring-1 ring-white/8 text-white/70 hover:bg-white/8 hover:text-white hover:ring-white/20"
-                        }`}
+                        onClick={() => updateForm("slotId", slot.id)}
+                        className={`rounded-3xl border p-5 text-left transition hover:-translate-y-1 ${selected ? "border-emerald-300/45 bg-emerald-400/10" : "border-white/10 bg-white/[.045] hover:border-white/20"}`}
                       >
-                        <span className="flex items-center justify-between">
-                          {option.title}
-                          {isSelected && <CheckCircle2 className="h-4 w-4 text-indigo-400 flex-shrink-0" />}
-                        </span>
+                        <div className="flex items-center justify-between">
+                          <CalendarCheck className={selected ? "h-5 w-5 text-emerald-300" : "h-5 w-5 text-white/30"} />
+                          {selected && <CheckCircle2 className="h-5 w-5 text-emerald-300" />}
+                        </div>
+                        <p className="mt-4 text-base font-black text-white">{label.date}</p>
+                        <p className="mt-2 flex items-center gap-2 text-sm font-bold text-white/55"><Clock className="h-4 w-4" /> {label.time}</p>
                       </button>
                     );
                   })}
                 </div>
-
-                {selectedEnquiry && (
-                  <div className="rounded-2xl bg-indigo-500/8 ring-1 ring-indigo-500/25 p-5 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Brain className="h-4 w-4 text-indigo-400" />
-                        {assistantLoading && (
-                          <div className="absolute inset-0 rounded-full animate-ping bg-indigo-400/40" />
-                        )}
-                      </div>
-                      <span className="text-xs font-black uppercase tracking-wider text-indigo-400">
-                        {assistantLoading ? "Please wait..." : "Answer"}
-                      </span>
-                    </div>
-                    <div className="rounded-xl bg-white/5 p-4 text-sm leading-6 text-white/80">
-                      {assistantLoading && assistantMode === "enquiry" ? (
-                        <div className="flex items-center gap-3 text-white/40">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Please wait...</span>
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap">{assistantReply || selectedEnquiry.answer}</p>
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-white/40 mb-2 block">Add details (optional)</span>
-                      <textarea
-                        value={form.message}
-                        onChange={(e) => update("message", e.target.value)}
-                        rows={3}
-                        className="w-full rounded-xl bg-white/5 ring-1 ring-white/10 px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none resize-none focus:ring-indigo-500/40"
-                        placeholder="Anything else the team should know..."
-                      />
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <PrimaryButton onClick={goToSlotsFromEnquiry} disabled={assistantLoading}>
-                        Book for this <ArrowRight className="h-4 w-4" />
-                      </PrimaryButton>
-                      <PrimaryButton variant="ghost" onClick={() => submitRequest({ withoutSlot: true })} disabled={submitting || assistantLoading}>
-                        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        Submit enquiry only
-                      </PrimaryButton>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* STEP: Booking (service selection) */}
-            {step === "booking" && (
-              <form onSubmit={goToSlotsFromBooking} className="space-y-5">
-                <div>
-                  <h2 className="text-2xl font-black text-white">{bookingOptionPage?.title || "Choose a service"}</h2>
-                  <p className="mt-1.5 text-sm text-white/40 leading-6">
-                    {bookingOptionPage?.subtitle || "Select what you need help with."}
-                  </p>
+              ) : (
+                <div className="rounded-3xl border border-amber-300/18 bg-amber-300/[.07] p-6 text-sm font-semibold leading-7 text-amber-50/80">
+                  No public slots are open right now. Submit your request and the team will confirm the best time.
                 </div>
-                <div className="space-y-2">
-                  {bookingOptions.length === 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => chooseBookingOption({ type: "other", id: "other", title: "General consultation", answer: "The team will review your details and confirm the best next step.", serviceName: "General consultation" })}
-                      className={`w-full rounded-2xl px-4 py-3.5 text-left text-sm font-bold ring-1 transition-all ${form.serviceNeeded === "General consultation" ? "bg-emerald-500/12 ring-emerald-500/40 text-white" : "bg-white/4 ring-white/8 text-white/70 hover:bg-white/8 hover:text-white"}`}
-                    >
-                      General consultation
-                    </button>
-                  ) : (
-                    bookingOptions.map((option) => {
-                      const isSelected = form.serviceNeeded === (option.serviceName || option.title);
-                      return (
-                        <button
-                          key={`${option.type}-${option.id}`}
-                          type="button"
-                          onClick={() => chooseBookingOption(option)}
-                          className={`w-full rounded-2xl px-4 py-4 text-left ring-1 transition-all duration-200 ${
-                            isSelected
-                              ? "bg-emerald-500/12 ring-emerald-500/40"
-                              : "bg-white/4 ring-white/8 hover:bg-white/8 hover:ring-white/20"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className={`text-sm font-black ${isSelected ? "text-white" : "text-white/80"}`}>{option.title}</p>
-                              <p className="mt-1 text-xs text-white/40 leading-5">{option.answer}</p>
-                            </div>
-                            {isSelected && <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" />}
-                          </div>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
+              )}
 
-                {form.serviceNeeded && (
-                  <div className="rounded-2xl bg-emerald-500/8 ring-1 ring-emerald-500/25 p-5 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Brain className="h-4 w-4 text-emerald-400" />
-                        {assistantLoading && (
-                          <div className="absolute inset-0 rounded-full animate-ping bg-emerald-400/40" />
-                        )}
-                      </div>
-                      <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                        {assistantLoading ? "Please wait..." : "Details"}
-                      </span>
-                    </div>
-                    <div className="rounded-xl bg-white/5 p-4 text-sm leading-6 text-white/80">
-                      {assistantLoading && assistantMode === "service" ? (
-                        <div className="flex items-center gap-3 text-white/40">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Please wait...
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap">
-                          {assistantReply || (selectedService ? serviceLine(selectedService) : "The team will confirm the details for this service.")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-white/40 mb-2 block">What do you need help with?</span>
-                  <textarea
-                    value={form.message}
-                    onChange={(e) => update("message", e.target.value)}
-                    rows={4}
-                    className="w-full rounded-xl bg-white/5 ring-1 ring-white/10 px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none resize-none focus:ring-indigo-500/40"
-                    placeholder="Example: I want to set this up for my salon / clinic / business..."
-                  />
-                </div>
-                <PrimaryButton type="submit" variant="emerald">
-                  Show available times <ArrowRight className="h-4 w-4" />
+              <div className="mt-6 ml-auto max-w-sm">
+                <PrimaryButton tone="emerald" disabled={submitting || (slots.length > 0 && !form.slotId)} onClick={submitBooking}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarCheck className="h-4 w-4" />}
+                  Confirm booking
                 </PrimaryButton>
-              </form>
-            )}
-
-            {/* STEP: Slots */}
-            {step === "slots" && (
-              <div className="space-y-5">
-                <div>
-                  <h2 className="text-2xl font-black text-white">Choose a time slot</h2>
-                  <p className="mt-1.5 text-sm text-white/40 leading-6">
-                    These slots are live from the business owner's schedule.
-                  </p>
-                </div>
-                {slots.length === 0 ? (
-                  <div className="rounded-2xl bg-amber-500/8 ring-1 ring-amber-500/30 p-5">
-                    <p className="text-sm text-amber-300 leading-6 mb-4">
-                      No booking slots are available right now. You can still submit your request and the team will follow up.
-                    </p>
-                    <PrimaryButton onClick={() => submitRequest({ withoutSlot: true })} disabled={submitting}>
-                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                      Submit request
-                    </PrimaryButton>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      {slots.map((slot) => {
-                        const isSelected = form.slotId === slot.id;
-                        return (
-                          <button
-                            key={slot.id}
-                            type="button"
-                            onClick={() => update("slotId", slot.id)}
-                            className={`w-full rounded-2xl px-4 py-4 text-left ring-1 transition-all duration-200 ${
-                              isSelected
-                                ? "bg-emerald-500/12 ring-emerald-500/40"
-                                : "bg-white/4 ring-white/8 hover:bg-white/8 hover:ring-white/20"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <p className={`text-sm font-black ${isSelected ? "text-white" : "text-white/80"}`}>{formatSlot(slot)}</p>
-                                <p className="mt-0.5 text-xs text-white/40">{slot.title} · {slot.timezone}</p>
-                              </div>
-                              {isSelected ? (
-                                <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                              ) : (
-                                <div className="h-5 w-5 rounded-full ring-1 ring-white/20 flex-shrink-0" />
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <PrimaryButton variant="emerald" onClick={() => submitRequest()} disabled={submitting || !form.slotId}>
-                      {submitting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CalendarCheck className="h-4 w-4" />
-                      )}
-                      Confirm booking request
-                    </PrimaryButton>
-                  </>
-                )}
               </div>
-            )}
+            </motion.section>
+          )}
 
-            {/* STEP: Success */}
-            {step === "success" && success && (
-              <div className="text-center py-4 space-y-5">
-                {/* Animated success ring */}
-                <div className="mx-auto relative w-20 h-20 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/30" />
-                  <div
-                    className="absolute inset-0 rounded-full ring-2 ring-emerald-500/50"
-                    style={{ animation: "rotate-ring 3s linear infinite" }}
-                  />
-                  <CheckCircle2 className="h-10 w-10 text-emerald-400" />
-                </div>
-
-                <div>
-                  <h2 className="text-3xl font-black text-white">
-                    {selectedSlot ? "Booking request received!" : "Enquiry received!"}
-                  </h2>
-                  <p className="mt-3 text-sm text-white/50 leading-6">
-                    Thanks, <span className="text-white font-bold">{form.name}</span>. {businessName} has your details and will be in touch.
-                  </p>
-                </div>
-
-                {selectedSlot && (
-                  <div className="rounded-2xl bg-emerald-500/8 ring-1 ring-emerald-500/25 p-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-emerald-400 mb-2">Your selected time</p>
-                    <p className="text-sm font-bold text-white">{formatSlot(selectedSlot)}</p>
-                  </div>
-                )}
-
-                {/* What's next */}
-                <div className="rounded-2xl bg-white/4 ring-1 ring-white/8 p-4 text-left space-y-3">
-                  <p className="text-xs font-black uppercase tracking-wider text-white/40">What happens next</p>
-                  {[
-                    "A notification has been sent to the team.",
-                    "You'll receive a confirmation email shortly.",
-                    "The team will follow up if anything else is needed.",
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <div className="mt-0.5 h-5 w-5 rounded-full bg-indigo-500/20 ring-1 ring-indigo-500/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-[10px] font-black text-indigo-400">{i + 1}</span>
-                      </div>
-                      <p className="text-sm text-white/60">{item}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-center gap-1.5 text-xs text-white/25">
-                  <Star className="h-3 w-3" />
-                  <span>Secure booking assistant</span>
-                  <Star className="h-3 w-3" />
+          {step === "success" && selectedOption && (
+            <motion.section initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="mx-auto max-w-2xl text-center">
+              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-400/10 shadow-[0_0_90px_rgba(16,185,129,.22)]">
+                <CheckCircle2 className="h-11 w-11 text-emerald-300" />
+              </div>
+              <h2 className="mt-8 text-4xl font-black text-white">You&apos;re all set!</h2>
+              <p className="mt-4 text-sm font-semibold leading-7 text-white/55">
+                Thanks, {form.name}. {businessName} has your details. {selectedSlot ? "Your booking is confirmed for the selected time." : "The team will confirm a suitable time with you."}
+              </p>
+              <div className="mt-8 rounded-3xl border border-white/10 bg-white/[.045] p-6 text-left">
+                <p className="text-[11px] font-black uppercase tracking-[.18em] text-white/35">Booking summary</p>
+                <div className="mt-4 space-y-3 text-sm font-semibold text-white/65">
+                  <p>Selected option: <span className="text-white">{selectedOption.title}</span></p>
+                  <p>Contact: <span className="text-white">{form.phone}</span> · <span className="text-white">{form.email}</span></p>
+                  <p>Time: <span className="text-white">{selectedSlot ? `${slotLabel(selectedSlot).date}, ${slotLabel(selectedSlot).time}` : "Team will confirm"}</span></p>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <p className="mt-6 text-center text-xs text-white/20">
-            Your data is handled securely. By submitting, you agree to be contacted by {businessName}.
-          </p>
-        </div>
+            </motion.section>
+          )}
+        </GlassPanel>
       </main>
-    </>
+    </PremiumMotionBackground>
   );
 }

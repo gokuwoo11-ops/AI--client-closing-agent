@@ -19,7 +19,15 @@ import {
   saveFAQ,
   deleteFAQ,
   getAgentData,
+  saveFunnelOptionPage,
+  deleteFunnelOptionPage,
+  saveFunnelOption,
+  deleteFunnelOption,
 } from "@/actions/agent";
+
+type FunnelOptionIntent = "ENQUIRY" | "BOOKING" | "BOTH";
+type FunnelOption = { id: string; title: string; answer: string; serviceName?: string };
+type FunnelOptionPage = { id: string; title: string; subtitle?: string; intent: FunnelOptionIntent; options: FunnelOption[] };
 
 export default function AgentSetupPage() {
   const [loading, setLoading] = useState(false);
@@ -46,6 +54,12 @@ export default function AgentSetupPage() {
   const [newSName, setNewSName] = useState("");
   const [newSPrice, setNewSPrice] = useState("");
   const [newSDesc, setNewSDesc] = useState("");
+
+  const [optionPages, setOptionPages] = useState<FunnelOptionPage[]>([]);
+  const [newPageTitle, setNewPageTitle] = useState("");
+  const [newPageSubtitle, setNewPageSubtitle] = useState("");
+  const [newPageIntent, setNewPageIntent] = useState<FunnelOptionIntent>("BOTH");
+  const [newOptionByPage, setNewOptionByPage] = useState<Record<string, { title: string; answer: string; serviceName: string }>>({});
 
   useEffect(() => {
     async function loadAgentData() {
@@ -80,6 +94,22 @@ export default function AgentSetupPage() {
               name: service.name,
               price: service.price || "",
               desc: service.description || "",
+            })),
+          );
+        }
+        if (data.funnelOptionPages) {
+          setOptionPages(
+            data.funnelOptionPages.map((page: any) => ({
+              id: page.id,
+              title: page.title,
+              subtitle: page.subtitle || "",
+              intent: page.intent || "BOTH",
+              options: (page.options || []).map((option: any) => ({
+                id: option.id,
+                title: option.title,
+                answer: option.answer,
+                serviceName: option.serviceName || "",
+              })),
             })),
           );
         }
@@ -147,6 +177,64 @@ export default function AgentSetupPage() {
   const handleRemoveService = async (id: string) => {
     setServices(services.filter((s) => s.id !== id));
     await deleteService(id);
+  };
+
+  const handleAddOptionPage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPageTitle.trim()) return;
+    setError("");
+    try {
+      const result = await saveFunnelOptionPage({ title: newPageTitle, subtitle: newPageSubtitle, intent: newPageIntent });
+      const saved = (result as any).page;
+      setOptionPages([...optionPages, { id: saved.id, title: saved.title, subtitle: saved.subtitle || "", intent: saved.intent || "BOTH", options: [] }]);
+      setNewPageTitle("");
+      setNewPageSubtitle("");
+      setNewPageIntent("BOTH");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not save option page.";
+      setError(message);
+    }
+  };
+
+  const handleRemoveOptionPage = async (id: string) => {
+    setOptionPages(optionPages.filter((page) => page.id !== id));
+    await deleteFunnelOptionPage(id);
+  };
+
+  const updateDraftOption = (pageId: string, key: "title" | "answer" | "serviceName", value: string) => {
+    setNewOptionByPage((prev) => {
+      const current = prev[pageId] || { title: "", answer: "", serviceName: "" };
+      return {
+        ...prev,
+        [pageId]: { ...current, [key]: value },
+      };
+    });
+  };
+
+  const handleAddOption = async (pageId: string) => {
+    const draft = newOptionByPage[pageId] || { title: "", answer: "", serviceName: "" };
+    if (!draft.title.trim() || !draft.answer.trim()) return;
+    setError("");
+    try {
+      const result = await saveFunnelOption({ pageId, title: draft.title, answer: draft.answer, serviceName: draft.serviceName });
+      const saved = (result as any).option;
+      setOptionPages(optionPages.map((page) => page.id === pageId
+        ? { ...page, options: [...page.options, { id: saved.id, title: saved.title, answer: saved.answer, serviceName: saved.serviceName || "" }] }
+        : page,
+      ));
+      setNewOptionByPage((prev) => ({ ...prev, [pageId]: { title: "", answer: "", serviceName: "" } }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not save option.";
+      setError(message);
+    }
+  };
+
+  const handleRemoveOption = async (pageId: string, optionId: string) => {
+    setOptionPages(optionPages.map((page) => page.id === pageId
+      ? { ...page, options: page.options.filter((option) => option.id !== optionId) }
+      : page,
+    ));
+    await deleteFunnelOption(optionId);
   };
 
   const handleSave = async () => {
@@ -282,6 +370,112 @@ export default function AgentSetupPage() {
                 onChange={(e) => setFallbackMessage(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
               />
+            </div>
+          </div>
+
+
+          {/* OWNER-CONFIGURABLE FUNNEL OPTIONS */}
+          <div className="glassmorphism rounded-xl border border-white/5 p-6 shadow-xl space-y-5">
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-indigo-400" /> Booking Page Options
+            </h2>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Control the option page shown to prospects. Add a page, add options, and write the brief saved answer. When a prospect selects an option, AI rewrites that saved answer into a helpful business response before moving them toward booking.
+            </p>
+
+            <form onSubmit={handleAddOptionPage} className="grid sm:grid-cols-[1fr_1fr_140px_auto] gap-3 border border-white/5 rounded-xl bg-white/[0.02] p-4">
+              <input
+                type="text"
+                placeholder="Option page title, e.g. What do you need help with?"
+                value={newPageTitle}
+                onChange={(e) => setNewPageTitle(e.target.value)}
+                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
+              />
+              <input
+                type="text"
+                placeholder="Short subtitle / helper text"
+                value={newPageSubtitle}
+                onChange={(e) => setNewPageSubtitle(e.target.value)}
+                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
+              />
+              <select
+                value={newPageIntent}
+                onChange={(e) => setNewPageIntent(e.target.value as FunnelOptionIntent)}
+                className="px-3 py-2 rounded-lg bg-[#090d16] border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
+              >
+                <option value="BOTH">Both</option>
+                <option value="BOOKING">Booking</option>
+                <option value="ENQUIRY">Enquiry</option>
+              </select>
+              <button type="submit" className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold">
+                <Plus className="h-3.5 w-3.5" /> Add Page
+              </button>
+            </form>
+
+            <div className="space-y-4">
+              {optionPages.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-xs text-gray-500">
+                  No custom option page yet. If you leave this empty, the public page will use Services and FAQs as fallback options.
+                </div>
+              ) : null}
+              {optionPages.map((page) => {
+                const draft = newOptionByPage[page.id] || { title: "", answer: "", serviceName: "" };
+                return (
+                  <div key={page.id} className="rounded-xl border border-white/5 bg-white/[0.02] p-4 space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-bold text-white">{page.title}</p>
+                        <p className="text-[11px] text-gray-500 mt-1">{page.subtitle || "No subtitle"} • {page.intent}</p>
+                      </div>
+                      <button onClick={() => handleRemoveOptionPage(page.id)} className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {page.options.map((option) => (
+                        <div key={option.id} className="rounded-lg border border-white/5 bg-black/10 p-3 flex items-start justify-between gap-3">
+                          <div className="text-xs">
+                            <p className="font-bold text-white">{option.title}</p>
+                            <p className="text-gray-400 mt-1 leading-relaxed">{option.answer}</p>
+                            {option.serviceName ? <p className="text-indigo-300 mt-1">Service: {option.serviceName}</p> : null}
+                          </div>
+                          <button onClick={() => handleRemoveOption(page.id, option.id)} className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded shrink-0">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-3 border-t border-white/5 pt-4">
+                      <input
+                        type="text"
+                        placeholder="Option label shown to prospect"
+                        value={draft.title}
+                        onChange={(e) => updateDraftOption(page.id, "title", e.target.value)}
+                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Related service name (optional)"
+                        value={draft.serviceName}
+                        onChange={(e) => updateDraftOption(page.id, "serviceName", e.target.value)}
+                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
+                      />
+                      <textarea
+                        rows={2}
+                        placeholder="Brief saved answer. AI will use this to reply better when selected."
+                        value={draft.answer}
+                        onChange={(e) => updateDraftOption(page.id, "answer", e.target.value)}
+                        className="sm:col-span-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs resize-none"
+                      />
+                      <button type="button" onClick={() => handleAddOption(page.id)} className="sm:col-span-2 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold">
+                        <Plus className="h-3.5 w-3.5" /> Add Option
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

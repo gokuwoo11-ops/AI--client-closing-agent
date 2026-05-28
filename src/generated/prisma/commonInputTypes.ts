@@ -328,6 +328,23 @@ export type EnumAppointmentStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumAppointmentStatusFilter<$PrismaModel>
 }
 
+export type EnumFunnelOptionIntentFilter<$PrismaModel = never> = {
+  equals?: $Enums.FunnelOptionIntent | Prisma.EnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  in?: $Enums.FunnelOptionIntent[] | Prisma.ListEnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FunnelOptionIntent[] | Prisma.ListEnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFunnelOptionIntentFilter<$PrismaModel> | $Enums.FunnelOptionIntent
+}
+
+export type EnumFunnelOptionIntentWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FunnelOptionIntent | Prisma.EnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  in?: $Enums.FunnelOptionIntent[] | Prisma.ListEnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FunnelOptionIntent[] | Prisma.ListEnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFunnelOptionIntentWithAggregatesFilter<$PrismaModel> | $Enums.FunnelOptionIntent
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFunnelOptionIntentFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFunnelOptionIntentFilter<$PrismaModel>
+}
+
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -626,6 +643,23 @@ export type NestedEnumAppointmentStatusWithAggregatesFilter<$PrismaModel = never
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumAppointmentStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumAppointmentStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumFunnelOptionIntentFilter<$PrismaModel = never> = {
+  equals?: $Enums.FunnelOptionIntent | Prisma.EnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  in?: $Enums.FunnelOptionIntent[] | Prisma.ListEnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FunnelOptionIntent[] | Prisma.ListEnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFunnelOptionIntentFilter<$PrismaModel> | $Enums.FunnelOptionIntent
+}
+
+export type NestedEnumFunnelOptionIntentWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FunnelOptionIntent | Prisma.EnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  in?: $Enums.FunnelOptionIntent[] | Prisma.ListEnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FunnelOptionIntent[] | Prisma.ListEnumFunnelOptionIntentFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFunnelOptionIntentWithAggregatesFilter<$PrismaModel> | $Enums.FunnelOptionIntent
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFunnelOptionIntentFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFunnelOptionIntentFilter<$PrismaModel>
 }
 
 

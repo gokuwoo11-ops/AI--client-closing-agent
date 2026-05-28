@@ -26,6 +26,11 @@ export async function GET(
           include: { services: true, faqs: true },
         },
         agentConfig: true,
+        funnelOptionPages: {
+          where: { isActive: true },
+          orderBy: { sortOrder: "asc" },
+          include: { options: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
+        },
         bookingSlots: {
           where: { isActive: true, startsAt: { gte: new Date() } },
           orderBy: { startsAt: "asc" },

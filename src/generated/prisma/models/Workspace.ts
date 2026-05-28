@@ -207,6 +207,7 @@ export type WorkspaceWhereInput = {
   bookingSlots?: Prisma.BookingSlotListRelationFilter
   appointments?: Prisma.AppointmentListRelationFilter
   knowledgeGaps?: Prisma.KnowledgeGapListRelationFilter
+  funnelOptionPages?: Prisma.FunnelOptionPageListRelationFilter
 }
 
 export type WorkspaceOrderByWithRelationInput = {
@@ -226,6 +227,7 @@ export type WorkspaceOrderByWithRelationInput = {
   bookingSlots?: Prisma.BookingSlotOrderByRelationAggregateInput
   appointments?: Prisma.AppointmentOrderByRelationAggregateInput
   knowledgeGaps?: Prisma.KnowledgeGapOrderByRelationAggregateInput
+  funnelOptionPages?: Prisma.FunnelOptionPageOrderByRelationAggregateInput
 }
 
 export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
@@ -248,6 +250,7 @@ export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
   bookingSlots?: Prisma.BookingSlotListRelationFilter
   appointments?: Prisma.AppointmentListRelationFilter
   knowledgeGaps?: Prisma.KnowledgeGapListRelationFilter
+  funnelOptionPages?: Prisma.FunnelOptionPageListRelationFilter
 }, "id" | "stripeCustomerId">
 
 export type WorkspaceOrderByWithAggregationInput = {
@@ -293,6 +296,7 @@ export type WorkspaceCreateInput = {
   bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateInput = {
@@ -312,6 +316,7 @@ export type WorkspaceUncheckedCreateInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUpdateInput = {
@@ -331,6 +336,7 @@ export type WorkspaceUpdateInput = {
   bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateInput = {
@@ -350,6 +356,7 @@ export type WorkspaceUncheckedUpdateInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateManyInput = {
@@ -533,6 +540,20 @@ export type WorkspaceUpdateOneRequiredWithoutAppointmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutAppointmentsInput, Prisma.WorkspaceUpdateWithoutAppointmentsInput>, Prisma.WorkspaceUncheckedUpdateWithoutAppointmentsInput>
 }
 
+export type WorkspaceCreateNestedOneWithoutFunnelOptionPagesInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutFunnelOptionPagesInput, Prisma.WorkspaceUncheckedCreateWithoutFunnelOptionPagesInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutFunnelOptionPagesInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+}
+
+export type WorkspaceUpdateOneRequiredWithoutFunnelOptionPagesNestedInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutFunnelOptionPagesInput, Prisma.WorkspaceUncheckedCreateWithoutFunnelOptionPagesInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutFunnelOptionPagesInput
+  upsert?: Prisma.WorkspaceUpsertWithoutFunnelOptionPagesInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutFunnelOptionPagesInput, Prisma.WorkspaceUpdateWithoutFunnelOptionPagesInput>, Prisma.WorkspaceUncheckedUpdateWithoutFunnelOptionPagesInput>
+}
+
 export type WorkspaceCreateNestedOneWithoutKnowledgeGapsInput = {
   create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutKnowledgeGapsInput, Prisma.WorkspaceUncheckedCreateWithoutKnowledgeGapsInput>
   connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutKnowledgeGapsInput
@@ -563,6 +584,7 @@ export type WorkspaceCreateWithoutMembersInput = {
   bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutMembersInput = {
@@ -581,6 +603,7 @@ export type WorkspaceUncheckedCreateWithoutMembersInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutMembersInput = {
@@ -615,6 +638,7 @@ export type WorkspaceUpdateWithoutMembersInput = {
   bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutMembersInput = {
@@ -633,6 +657,7 @@ export type WorkspaceUncheckedUpdateWithoutMembersInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutBusinessProfileInput = {
@@ -651,6 +676,7 @@ export type WorkspaceCreateWithoutBusinessProfileInput = {
   bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutBusinessProfileInput = {
@@ -669,6 +695,7 @@ export type WorkspaceUncheckedCreateWithoutBusinessProfileInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutBusinessProfileInput = {
@@ -703,6 +730,7 @@ export type WorkspaceUpdateWithoutBusinessProfileInput = {
   bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutBusinessProfileInput = {
@@ -721,6 +749,7 @@ export type WorkspaceUncheckedUpdateWithoutBusinessProfileInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAgentConfigInput = {
@@ -739,6 +768,7 @@ export type WorkspaceCreateWithoutAgentConfigInput = {
   bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAgentConfigInput = {
@@ -757,6 +787,7 @@ export type WorkspaceUncheckedCreateWithoutAgentConfigInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAgentConfigInput = {
@@ -791,6 +822,7 @@ export type WorkspaceUpdateWithoutAgentConfigInput = {
   bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAgentConfigInput = {
@@ -809,6 +841,7 @@ export type WorkspaceUncheckedUpdateWithoutAgentConfigInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutLeadsInput = {
@@ -827,6 +860,7 @@ export type WorkspaceCreateWithoutLeadsInput = {
   bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutLeadsInput = {
@@ -845,6 +879,7 @@ export type WorkspaceUncheckedCreateWithoutLeadsInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutLeadsInput = {
@@ -879,6 +914,7 @@ export type WorkspaceUpdateWithoutLeadsInput = {
   bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutLeadsInput = {
@@ -897,6 +933,7 @@ export type WorkspaceUncheckedUpdateWithoutLeadsInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutNotificationsInput = {
@@ -915,6 +952,7 @@ export type WorkspaceCreateWithoutNotificationsInput = {
   bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutNotificationsInput = {
@@ -933,6 +971,7 @@ export type WorkspaceUncheckedCreateWithoutNotificationsInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutNotificationsInput = {
@@ -967,6 +1006,7 @@ export type WorkspaceUpdateWithoutNotificationsInput = {
   bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutNotificationsInput = {
@@ -985,6 +1025,7 @@ export type WorkspaceUncheckedUpdateWithoutNotificationsInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutIntegrationsInput = {
@@ -1003,6 +1044,7 @@ export type WorkspaceCreateWithoutIntegrationsInput = {
   bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutIntegrationsInput = {
@@ -1021,6 +1063,7 @@ export type WorkspaceUncheckedCreateWithoutIntegrationsInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutIntegrationsInput = {
@@ -1055,6 +1098,7 @@ export type WorkspaceUpdateWithoutIntegrationsInput = {
   bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutIntegrationsInput = {
@@ -1073,6 +1117,7 @@ export type WorkspaceUncheckedUpdateWithoutIntegrationsInput = {
   bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutBookingSlotsInput = {
@@ -1091,6 +1136,7 @@ export type WorkspaceCreateWithoutBookingSlotsInput = {
   integrations?: Prisma.IntegrationCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutBookingSlotsInput = {
@@ -1109,6 +1155,7 @@ export type WorkspaceUncheckedCreateWithoutBookingSlotsInput = {
   integrations?: Prisma.IntegrationUncheckedCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutBookingSlotsInput = {
@@ -1143,6 +1190,7 @@ export type WorkspaceUpdateWithoutBookingSlotsInput = {
   integrations?: Prisma.IntegrationUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutBookingSlotsInput = {
@@ -1161,6 +1209,7 @@ export type WorkspaceUncheckedUpdateWithoutBookingSlotsInput = {
   integrations?: Prisma.IntegrationUncheckedUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAppointmentsInput = {
@@ -1179,6 +1228,7 @@ export type WorkspaceCreateWithoutAppointmentsInput = {
   integrations?: Prisma.IntegrationCreateNestedManyWithoutWorkspaceInput
   bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAppointmentsInput = {
@@ -1197,6 +1247,7 @@ export type WorkspaceUncheckedCreateWithoutAppointmentsInput = {
   integrations?: Prisma.IntegrationUncheckedCreateNestedManyWithoutWorkspaceInput
   bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAppointmentsInput = {
@@ -1231,6 +1282,7 @@ export type WorkspaceUpdateWithoutAppointmentsInput = {
   integrations?: Prisma.IntegrationUpdateManyWithoutWorkspaceNestedInput
   bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAppointmentsInput = {
@@ -1248,6 +1300,99 @@ export type WorkspaceUncheckedUpdateWithoutAppointmentsInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutWorkspaceNestedInput
   integrations?: Prisma.IntegrationUncheckedUpdateManyWithoutWorkspaceNestedInput
   bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
+  knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceCreateWithoutFunnelOptionPagesInput = {
+  id?: string
+  name: string
+  stripeCustomerId?: string | null
+  subscriptionPlan?: string
+  subscriptionStatus?: $Enums.SubscriptionStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  members?: Prisma.WorkspaceMemberCreateNestedManyWithoutWorkspaceInput
+  businessProfile?: Prisma.BusinessProfileCreateNestedOneWithoutWorkspaceInput
+  agentConfig?: Prisma.AgentConfigCreateNestedOneWithoutWorkspaceInput
+  leads?: Prisma.LeadCreateNestedManyWithoutWorkspaceInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutWorkspaceInput
+  integrations?: Prisma.IntegrationCreateNestedManyWithoutWorkspaceInput
+  bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
+  knowledgeGaps?: Prisma.KnowledgeGapCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceUncheckedCreateWithoutFunnelOptionPagesInput = {
+  id?: string
+  name: string
+  stripeCustomerId?: string | null
+  subscriptionPlan?: string
+  subscriptionStatus?: $Enums.SubscriptionStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  members?: Prisma.WorkspaceMemberUncheckedCreateNestedManyWithoutWorkspaceInput
+  businessProfile?: Prisma.BusinessProfileUncheckedCreateNestedOneWithoutWorkspaceInput
+  agentConfig?: Prisma.AgentConfigUncheckedCreateNestedOneWithoutWorkspaceInput
+  leads?: Prisma.LeadUncheckedCreateNestedManyWithoutWorkspaceInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutWorkspaceInput
+  integrations?: Prisma.IntegrationUncheckedCreateNestedManyWithoutWorkspaceInput
+  bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
+  knowledgeGaps?: Prisma.KnowledgeGapUncheckedCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceCreateOrConnectWithoutFunnelOptionPagesInput = {
+  where: Prisma.WorkspaceWhereUniqueInput
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutFunnelOptionPagesInput, Prisma.WorkspaceUncheckedCreateWithoutFunnelOptionPagesInput>
+}
+
+export type WorkspaceUpsertWithoutFunnelOptionPagesInput = {
+  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutFunnelOptionPagesInput, Prisma.WorkspaceUncheckedUpdateWithoutFunnelOptionPagesInput>
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutFunnelOptionPagesInput, Prisma.WorkspaceUncheckedCreateWithoutFunnelOptionPagesInput>
+  where?: Prisma.WorkspaceWhereInput
+}
+
+export type WorkspaceUpdateToOneWithWhereWithoutFunnelOptionPagesInput = {
+  where?: Prisma.WorkspaceWhereInput
+  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutFunnelOptionPagesInput, Prisma.WorkspaceUncheckedUpdateWithoutFunnelOptionPagesInput>
+}
+
+export type WorkspaceUpdateWithoutFunnelOptionPagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.WorkspaceMemberUpdateManyWithoutWorkspaceNestedInput
+  businessProfile?: Prisma.BusinessProfileUpdateOneWithoutWorkspaceNestedInput
+  agentConfig?: Prisma.AgentConfigUpdateOneWithoutWorkspaceNestedInput
+  leads?: Prisma.LeadUpdateManyWithoutWorkspaceNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutWorkspaceNestedInput
+  integrations?: Prisma.IntegrationUpdateManyWithoutWorkspaceNestedInput
+  bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
+  knowledgeGaps?: Prisma.KnowledgeGapUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceUncheckedUpdateWithoutFunnelOptionPagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.WorkspaceMemberUncheckedUpdateManyWithoutWorkspaceNestedInput
+  businessProfile?: Prisma.BusinessProfileUncheckedUpdateOneWithoutWorkspaceNestedInput
+  agentConfig?: Prisma.AgentConfigUncheckedUpdateOneWithoutWorkspaceNestedInput
+  leads?: Prisma.LeadUncheckedUpdateManyWithoutWorkspaceNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutWorkspaceNestedInput
+  integrations?: Prisma.IntegrationUncheckedUpdateManyWithoutWorkspaceNestedInput
+  bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
   knowledgeGaps?: Prisma.KnowledgeGapUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
@@ -1267,6 +1412,7 @@ export type WorkspaceCreateWithoutKnowledgeGapsInput = {
   integrations?: Prisma.IntegrationCreateNestedManyWithoutWorkspaceInput
   bookingSlots?: Prisma.BookingSlotCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutKnowledgeGapsInput = {
@@ -1285,6 +1431,7 @@ export type WorkspaceUncheckedCreateWithoutKnowledgeGapsInput = {
   integrations?: Prisma.IntegrationUncheckedCreateNestedManyWithoutWorkspaceInput
   bookingSlots?: Prisma.BookingSlotUncheckedCreateNestedManyWithoutWorkspaceInput
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutWorkspaceInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutKnowledgeGapsInput = {
@@ -1319,6 +1466,7 @@ export type WorkspaceUpdateWithoutKnowledgeGapsInput = {
   integrations?: Prisma.IntegrationUpdateManyWithoutWorkspaceNestedInput
   bookingSlots?: Prisma.BookingSlotUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutKnowledgeGapsInput = {
@@ -1337,6 +1485,7 @@ export type WorkspaceUncheckedUpdateWithoutKnowledgeGapsInput = {
   integrations?: Prisma.IntegrationUncheckedUpdateManyWithoutWorkspaceNestedInput
   bookingSlots?: Prisma.BookingSlotUncheckedUpdateManyWithoutWorkspaceNestedInput
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutWorkspaceNestedInput
+  funnelOptionPages?: Prisma.FunnelOptionPageUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 
@@ -1352,6 +1501,7 @@ export type WorkspaceCountOutputType = {
   bookingSlots: number
   appointments: number
   knowledgeGaps: number
+  funnelOptionPages: number
 }
 
 export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1362,6 +1512,7 @@ export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensi
   bookingSlots?: boolean | WorkspaceCountOutputTypeCountBookingSlotsArgs
   appointments?: boolean | WorkspaceCountOutputTypeCountAppointmentsArgs
   knowledgeGaps?: boolean | WorkspaceCountOutputTypeCountKnowledgeGapsArgs
+  funnelOptionPages?: boolean | WorkspaceCountOutputTypeCountFunnelOptionPagesArgs
 }
 
 /**
@@ -1423,6 +1574,13 @@ export type WorkspaceCountOutputTypeCountKnowledgeGapsArgs<ExtArgs extends runti
   where?: Prisma.KnowledgeGapWhereInput
 }
 
+/**
+ * WorkspaceCountOutputType without action
+ */
+export type WorkspaceCountOutputTypeCountFunnelOptionPagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FunnelOptionPageWhereInput
+}
+
 
 export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1441,6 +1599,7 @@ export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   bookingSlots?: boolean | Prisma.Workspace$bookingSlotsArgs<ExtArgs>
   appointments?: boolean | Prisma.Workspace$appointmentsArgs<ExtArgs>
   knowledgeGaps?: boolean | Prisma.Workspace$knowledgeGapsArgs<ExtArgs>
+  funnelOptionPages?: boolean | Prisma.Workspace$funnelOptionPagesArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["workspace"]>
 
@@ -1485,6 +1644,7 @@ export type WorkspaceInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   bookingSlots?: boolean | Prisma.Workspace$bookingSlotsArgs<ExtArgs>
   appointments?: boolean | Prisma.Workspace$appointmentsArgs<ExtArgs>
   knowledgeGaps?: boolean | Prisma.Workspace$knowledgeGapsArgs<ExtArgs>
+  funnelOptionPages?: boolean | Prisma.Workspace$funnelOptionPagesArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WorkspaceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1502,6 +1662,7 @@ export type $WorkspacePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     bookingSlots: Prisma.$BookingSlotPayload<ExtArgs>[]
     appointments: Prisma.$AppointmentPayload<ExtArgs>[]
     knowledgeGaps: Prisma.$KnowledgeGapPayload<ExtArgs>[]
+    funnelOptionPages: Prisma.$FunnelOptionPagePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1914,6 +2075,7 @@ export interface Prisma__WorkspaceClient<T, Null = never, ExtArgs extends runtim
   bookingSlots<T extends Prisma.Workspace$bookingSlotsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$bookingSlotsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingSlotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   appointments<T extends Prisma.Workspace$appointmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$appointmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AppointmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   knowledgeGaps<T extends Prisma.Workspace$knowledgeGapsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$knowledgeGapsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$KnowledgeGapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  funnelOptionPages<T extends Prisma.Workspace$funnelOptionPagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$funnelOptionPagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FunnelOptionPagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2546,6 +2708,30 @@ export type Workspace$knowledgeGapsArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.KnowledgeGapScalarFieldEnum | Prisma.KnowledgeGapScalarFieldEnum[]
+}
+
+/**
+ * Workspace.funnelOptionPages
+ */
+export type Workspace$funnelOptionPagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the FunnelOptionPage
+   */
+  select?: Prisma.FunnelOptionPageSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the FunnelOptionPage
+   */
+  omit?: Prisma.FunnelOptionPageOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FunnelOptionPageInclude<ExtArgs> | null
+  where?: Prisma.FunnelOptionPageWhereInput
+  orderBy?: Prisma.FunnelOptionPageOrderByWithRelationInput | Prisma.FunnelOptionPageOrderByWithRelationInput[]
+  cursor?: Prisma.FunnelOptionPageWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FunnelOptionPageScalarFieldEnum | Prisma.FunnelOptionPageScalarFieldEnum[]
 }
 
 /**

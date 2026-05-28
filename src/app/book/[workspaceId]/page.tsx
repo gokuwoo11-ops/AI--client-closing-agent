@@ -34,6 +34,21 @@ type FAQ = {
   answer: string;
 };
 
+type FunnelOption = {
+  id: string;
+  title: string;
+  answer: string;
+  serviceName?: string | null;
+};
+
+type FunnelOptionPage = {
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  intent: "ENQUIRY" | "BOOKING" | "BOTH";
+  options: FunnelOption[];
+};
+
 type Slot = {
   id: string;
   title: string;
@@ -58,6 +73,7 @@ type PublicWorkspace = {
   agentConfig?: {
     fallbackMessage?: string | null;
   } | null;
+  funnelOptionPages?: FunnelOptionPage[];
   bookingSlots?: Slot[];
 };
 
@@ -82,9 +98,10 @@ type FlowStep =
   | "success";
 
 type SelectedEnquiry =
-  | { type: "faq"; id: string; title: string; answer: string }
-  | { type: "service"; id: string; title: string; answer: string }
-  | { type: "other"; id: "other"; title: string; answer: string };
+  | { type: "faq"; id: string; title: string; answer: string; serviceName?: string }
+  | { type: "service"; id: string; title: string; answer: string; serviceName?: string }
+  | { type: "custom"; id: string; title: string; answer: string; serviceName?: string }
+  | { type: "other"; id: "other"; title: string; answer: string; serviceName?: string };
 
 function formatSlot(slot: Slot) {
   const start = new Date(slot.startsAt);
@@ -459,19 +476,59 @@ export default function PublicBookingPage() {
   const slots = workspace?.bookingSlots || [];
   const selectedSlot = useMemo(() => slots.find((slot) => slot.id === form.slotId), [slots, form.slotId]);
   const selectedService = useMemo(() => services.find((service) => service.name === form.serviceNeeded), [form.serviceNeeded, services]);
+  const funnelOptionPages = workspace?.funnelOptionPages || [];
+  const bookingOptionPage = useMemo(
+    () => funnelOptionPages.find((page) => ["BOOKING", "BOTH"].includes(page.intent) && page.options?.length),
+    [funnelOptionPages],
+  );
+  const enquiryOptionPage = useMemo(
+    () => funnelOptionPages.find((page) => ["ENQUIRY", "BOTH"].includes(page.intent) && page.options?.length),
+    [funnelOptionPages],
+  );
 
   const enquiryOptions: SelectedEnquiry[] = useMemo(() => {
+    if (enquiryOptionPage?.options?.length) {
+      return [
+        ...enquiryOptionPage.options.map((option) => ({
+          type: "custom" as const,
+          id: option.id,
+          title: option.title,
+          answer: option.answer,
+          serviceName: option.serviceName || option.title,
+        })),
+        { type: "other" as const, id: "other" as const, title: "Other enquiry", answer: "Share your question below and the team will review it." },
+      ];
+    }
     const faqOptions = faqs.slice(0, 8).map((faq) => ({
-      type: "faq" as const, id: faq.id, title: faq.question, answer: faq.answer,
+      type: "faq" as const, id: faq.id, title: faq.question, answer: faq.answer, serviceName: faq.question,
     }));
     const serviceOptions = services.slice(0, 8).map((service) => ({
-      type: "service" as const, id: service.id, title: service.name, answer: serviceLine(service),
+      type: "service" as const, id: service.id, title: service.name, answer: serviceLine(service), serviceName: service.name,
     }));
     return [
       ...faqOptions, ...serviceOptions,
       { type: "other" as const, id: "other" as const, title: "Other enquiry", answer: "Share your question below and the team will review it." },
     ];
-  }, [faqs, services]);
+  }, [faqs, services, enquiryOptionPage]);
+
+  const bookingOptions: SelectedEnquiry[] = useMemo(() => {
+    if (bookingOptionPage?.options?.length) {
+      return bookingOptionPage.options.map((option) => ({
+        type: "custom" as const,
+        id: option.id,
+        title: option.title,
+        answer: option.answer,
+        serviceName: option.serviceName || option.title,
+      }));
+    }
+    return services.map((service) => ({
+      type: "service" as const,
+      id: service.id,
+      title: service.name,
+      answer: serviceLine(service),
+      serviceName: service.name,
+    }));
+  }, [bookingOptionPage, services]);
 
   function update(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -486,14 +543,14 @@ export default function PublicBookingPage() {
     try {
       const prompt = args.mode === "service"
         ? [
-            `The prospect selected this booking service option: ${args.title}.`,
-            `Saved service details: ${args.savedAnswer}`,
-            "Reply as a helpful business receptionist. Explain this service clearly using only saved details. Mention price/duration only if saved. Then ask one short next question that helps qualify the prospect before showing booking slots.",
+            `The prospect selected this booking option: ${args.title}.`,
+            `Owner-saved answer for this option: ${args.savedAnswer}`,
+            "Analyze the selected option and owner-saved answer. Reply as a helpful business receptionist using only saved business details. Keep it clear, short, and related to this business. Then ask one short next question about the prospect's requirement before booking slots.",
           ].join("\n")
         : [
             `The prospect selected this enquiry option: ${args.title}.`,
-            `Saved answer: ${args.savedAnswer}`,
-            "Reply as a helpful business receptionist. Answer clearly using the saved answer. Then ask whether they want to book an available slot for this.",
+            `Owner-saved answer for this option: ${args.savedAnswer}`,
+            "Analyze the selected option and owner-saved answer. Reply as a helpful business receptionist using only saved business details. Keep it clear, short, and related to this business. Then ask whether they want to book an available slot for this.",
           ].join("\n");
 
       const res = await fetch("/api/public/assistant", {
@@ -540,17 +597,22 @@ export default function PublicBookingPage() {
     if (nextIntent === "booking") setStep("booking");
   }
 
-  function chooseService(service: Service) {
-    update("serviceNeeded", service.name);
+  function chooseBookingOption(option: SelectedEnquiry) {
+    update("serviceNeeded", option.serviceName || option.title);
+    setSelectedEnquiry(option.type === "custom" ? option : null);
     setError("");
-    generateOptionReply({ mode: "service", title: service.name, savedAnswer: serviceLine(service), serviceName: service.name });
+    generateOptionReply({ mode: "service", title: option.title, savedAnswer: option.answer, serviceName: option.serviceName || option.title });
+  }
+
+  function chooseService(service: Service) {
+    chooseBookingOption({ type: "service", id: service.id, title: service.name, answer: serviceLine(service), serviceName: service.name });
   }
 
   function chooseEnquiry(option: SelectedEnquiry) {
     setSelectedEnquiry(option);
     setError("");
-    if (option.type === "service") update("serviceNeeded", option.title);
-    generateOptionReply({ mode: "enquiry", title: option.title, savedAnswer: option.answer, serviceName: option.type === "service" ? option.title : form.serviceNeeded });
+    if (option.serviceName) update("serviceNeeded", option.serviceName);
+    generateOptionReply({ mode: "enquiry", title: option.title, savedAnswer: option.answer, serviceName: option.serviceName || form.serviceNeeded });
   }
 
   function goToSlotsFromBooking(e?: React.FormEvent<HTMLFormElement>) {
@@ -563,11 +625,11 @@ export default function PublicBookingPage() {
 
   function goToSlotsFromEnquiry() {
     if (!selectedEnquiry) { setError("Please choose an enquiry option first."); return; }
-    const fallbackService = selectedEnquiry.type === "service" ? selectedEnquiry.title : selectedEnquiry.title;
+    const fallbackService = selectedEnquiry.serviceName || selectedEnquiry.title;
     setForm((prev) => ({
       ...prev,
       serviceNeeded: prev.serviceNeeded || fallbackService,
-      message: prev.message || `Enquiry selected: ${selectedEnquiry.title}\nAnswer shown: ${selectedEnquiry.answer}`,
+      message: prev.message || `Enquiry selected: ${selectedEnquiry.title}\nSaved answer: ${selectedEnquiry.answer}`,
     }));
     setError("");
     setStep("slots");
@@ -583,7 +645,7 @@ export default function PublicBookingPage() {
       if (wantsSlot && !form.slotId) throw new Error("Please choose an available time.");
 
       const enquiryText = selectedEnquiry
-        ? [`Enquiry option: ${selectedEnquiry.title}`, `Answer shown: ${selectedEnquiry.answer}`].join("\n")
+        ? [`Selected option: ${selectedEnquiry.title}`, `Saved answer: ${selectedEnquiry.answer}`].join("\n")
         : null;
 
       const message = [
@@ -796,7 +858,7 @@ export default function PublicBookingPage() {
                       </div>
                       <h3 className="text-lg font-black text-white mb-2">I have an enquiry</h3>
                       <p className="text-sm text-white/40 leading-5">
-                        Get AI-powered answers from the business's knowledge base.
+                        Choose a topic and get the right business answer.
                       </p>
                       <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-indigo-400">
                         Choose this <ArrowRight className="h-3 w-3" />
@@ -829,9 +891,9 @@ export default function PublicBookingPage() {
             {step === "enquiry" && (
               <div className="space-y-5">
                 <div>
-                  <h2 className="text-2xl font-black text-white">What's your enquiry?</h2>
+                  <h2 className="text-2xl font-black text-white">{enquiryOptionPage?.title || "What's your enquiry?"}</h2>
                   <p className="mt-1.5 text-sm text-white/40 leading-6">
-                    Select from the business's topics — AI will answer instantly.
+                    {enquiryOptionPage?.subtitle || "Select a topic and we will guide you from there."}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -867,14 +929,14 @@ export default function PublicBookingPage() {
                         )}
                       </div>
                       <span className="text-xs font-black uppercase tracking-wider text-indigo-400">
-                        {assistantLoading ? "AI is thinking..." : "AI Answer"}
+                        {assistantLoading ? "Please wait..." : "Answer"}
                       </span>
                     </div>
                     <div className="rounded-xl bg-white/5 p-4 text-sm leading-6 text-white/80">
                       {assistantLoading && assistantMode === "enquiry" ? (
                         <div className="flex items-center gap-3 text-white/40">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Preparing the best answer using business knowledge...</span>
+                          <span>Please wait...</span>
                         </div>
                       ) : (
                         <p className="whitespace-pre-wrap">{assistantReply || selectedEnquiry.answer}</p>
@@ -908,28 +970,28 @@ export default function PublicBookingPage() {
             {step === "booking" && (
               <form onSubmit={goToSlotsFromBooking} className="space-y-5">
                 <div>
-                  <h2 className="text-2xl font-black text-white">Choose a service</h2>
+                  <h2 className="text-2xl font-black text-white">{bookingOptionPage?.title || "Choose a service"}</h2>
                   <p className="mt-1.5 text-sm text-white/40 leading-6">
-                    Services are managed by the business owner.
+                    {bookingOptionPage?.subtitle || "Select what you need help with."}
                   </p>
                 </div>
                 <div className="space-y-2">
-                  {services.length === 0 ? (
+                  {bookingOptions.length === 0 ? (
                     <button
                       type="button"
-                      onClick={() => update("serviceNeeded", "General consultation")}
+                      onClick={() => chooseBookingOption({ type: "other", id: "other", title: "General consultation", answer: "The team will review your details and confirm the best next step.", serviceName: "General consultation" })}
                       className={`w-full rounded-2xl px-4 py-3.5 text-left text-sm font-bold ring-1 transition-all ${form.serviceNeeded === "General consultation" ? "bg-emerald-500/12 ring-emerald-500/40 text-white" : "bg-white/4 ring-white/8 text-white/70 hover:bg-white/8 hover:text-white"}`}
                     >
                       General consultation
                     </button>
                   ) : (
-                    services.map((service) => {
-                      const isSelected = form.serviceNeeded === service.name;
+                    bookingOptions.map((option) => {
+                      const isSelected = form.serviceNeeded === (option.serviceName || option.title);
                       return (
                         <button
-                          key={service.id}
+                          key={`${option.type}-${option.id}`}
                           type="button"
-                          onClick={() => chooseService(service)}
+                          onClick={() => chooseBookingOption(option)}
                           className={`w-full rounded-2xl px-4 py-4 text-left ring-1 transition-all duration-200 ${
                             isSelected
                               ? "bg-emerald-500/12 ring-emerald-500/40"
@@ -938,8 +1000,8 @@ export default function PublicBookingPage() {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className={`text-sm font-black ${isSelected ? "text-white" : "text-white/80"}`}>{service.name}</p>
-                              <p className="mt-1 text-xs text-white/40 leading-5">{serviceLine(service)}</p>
+                              <p className={`text-sm font-black ${isSelected ? "text-white" : "text-white/80"}`}>{option.title}</p>
+                              <p className="mt-1 text-xs text-white/40 leading-5">{option.answer}</p>
                             </div>
                             {isSelected && <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" />}
                           </div>
@@ -959,14 +1021,14 @@ export default function PublicBookingPage() {
                         )}
                       </div>
                       <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                        {assistantLoading ? "AI is preparing..." : "AI Service Guide"}
+                        {assistantLoading ? "Please wait..." : "Details"}
                       </span>
                     </div>
                     <div className="rounded-xl bg-white/5 p-4 text-sm leading-6 text-white/80">
                       {assistantLoading && assistantMode === "service" ? (
                         <div className="flex items-center gap-3 text-white/40">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          Preparing service details...
+                          Please wait...
                         </div>
                       ) : (
                         <p className="whitespace-pre-wrap">
@@ -1104,7 +1166,7 @@ export default function PublicBookingPage() {
 
                 <div className="flex items-center justify-center gap-1.5 text-xs text-white/25">
                   <Star className="h-3 w-3" />
-                  <span>Powered by AI booking assistant</span>
+                  <span>Secure booking assistant</span>
                   <Star className="h-3 w-3" />
                 </div>
               </div>

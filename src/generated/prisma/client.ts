@@ -122,6 +122,16 @@ export type BookingSlot = Prisma.BookingSlotModel
  */
 export type Appointment = Prisma.AppointmentModel
 /**
+ * Model FunnelOptionPage
+ * 
+ */
+export type FunnelOptionPage = Prisma.FunnelOptionPageModel
+/**
+ * Model FunnelOption
+ * 
+ */
+export type FunnelOption = Prisma.FunnelOptionModel
+/**
  * Model KnowledgeGap
  * 
  */

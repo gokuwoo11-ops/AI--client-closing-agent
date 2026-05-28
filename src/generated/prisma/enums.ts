@@ -70,3 +70,12 @@ export const AppointmentStatus = {
 } as const
 
 export type AppointmentStatus = (typeof AppointmentStatus)[keyof typeof AppointmentStatus]
+
+
+export const FunnelOptionIntent = {
+  ENQUIRY: 'ENQUIRY',
+  BOOKING: 'BOOKING',
+  BOTH: 'BOTH'
+} as const
+
+export type FunnelOptionIntent = (typeof FunnelOptionIntent)[keyof typeof FunnelOptionIntent]

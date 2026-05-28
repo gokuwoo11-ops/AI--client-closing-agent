@@ -400,6 +400,8 @@ export const ModelName = {
   Integration: 'Integration',
   BookingSlot: 'BookingSlot',
   Appointment: 'Appointment',
+  FunnelOptionPage: 'FunnelOptionPage',
+  FunnelOption: 'FunnelOption',
   KnowledgeGap: 'KnowledgeGap'
 } as const
 
@@ -416,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "workspace" | "workspaceMember" | "businessProfile" | "service" | "fAQ" | "agentConfig" | "lead" | "conversation" | "message" | "followUpRule" | "followUpQueue" | "notification" | "integration" | "bookingSlot" | "appointment" | "knowledgeGap"
+    modelProps: "user" | "workspace" | "workspaceMember" | "businessProfile" | "service" | "fAQ" | "agentConfig" | "lead" | "conversation" | "message" | "followUpRule" | "followUpQueue" | "notification" | "integration" | "bookingSlot" | "appointment" | "funnelOptionPage" | "funnelOption" | "knowledgeGap"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1604,6 +1606,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    FunnelOptionPage: {
+      payload: Prisma.$FunnelOptionPagePayload<ExtArgs>
+      fields: Prisma.FunnelOptionPageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FunnelOptionPageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FunnelOptionPageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload>
+        }
+        findFirst: {
+          args: Prisma.FunnelOptionPageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FunnelOptionPageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload>
+        }
+        findMany: {
+          args: Prisma.FunnelOptionPageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload>[]
+        }
+        create: {
+          args: Prisma.FunnelOptionPageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload>
+        }
+        createMany: {
+          args: Prisma.FunnelOptionPageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FunnelOptionPageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload>[]
+        }
+        delete: {
+          args: Prisma.FunnelOptionPageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload>
+        }
+        update: {
+          args: Prisma.FunnelOptionPageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload>
+        }
+        deleteMany: {
+          args: Prisma.FunnelOptionPageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FunnelOptionPageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FunnelOptionPageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload>[]
+        }
+        upsert: {
+          args: Prisma.FunnelOptionPageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPagePayload>
+        }
+        aggregate: {
+          args: Prisma.FunnelOptionPageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFunnelOptionPage>
+        }
+        groupBy: {
+          args: Prisma.FunnelOptionPageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FunnelOptionPageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FunnelOptionPageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FunnelOptionPageCountAggregateOutputType> | number
+        }
+      }
+    }
+    FunnelOption: {
+      payload: Prisma.$FunnelOptionPayload<ExtArgs>
+      fields: Prisma.FunnelOptionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FunnelOptionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FunnelOptionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload>
+        }
+        findFirst: {
+          args: Prisma.FunnelOptionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FunnelOptionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload>
+        }
+        findMany: {
+          args: Prisma.FunnelOptionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload>[]
+        }
+        create: {
+          args: Prisma.FunnelOptionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload>
+        }
+        createMany: {
+          args: Prisma.FunnelOptionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FunnelOptionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload>[]
+        }
+        delete: {
+          args: Prisma.FunnelOptionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload>
+        }
+        update: {
+          args: Prisma.FunnelOptionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload>
+        }
+        deleteMany: {
+          args: Prisma.FunnelOptionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FunnelOptionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FunnelOptionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload>[]
+        }
+        upsert: {
+          args: Prisma.FunnelOptionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FunnelOptionPayload>
+        }
+        aggregate: {
+          args: Prisma.FunnelOptionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFunnelOption>
+        }
+        groupBy: {
+          args: Prisma.FunnelOptionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FunnelOptionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FunnelOptionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FunnelOptionCountAggregateOutputType> | number
+        }
+      }
+    }
     KnowledgeGap: {
       payload: Prisma.$KnowledgeGapPayload<ExtArgs>
       fields: Prisma.KnowledgeGapFieldRefs
@@ -1964,6 +2114,36 @@ export const AppointmentScalarFieldEnum = {
 export type AppointmentScalarFieldEnum = (typeof AppointmentScalarFieldEnum)[keyof typeof AppointmentScalarFieldEnum]
 
 
+export const FunnelOptionPageScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  title: 'title',
+  subtitle: 'subtitle',
+  intent: 'intent',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FunnelOptionPageScalarFieldEnum = (typeof FunnelOptionPageScalarFieldEnum)[keyof typeof FunnelOptionPageScalarFieldEnum]
+
+
+export const FunnelOptionScalarFieldEnum = {
+  id: 'id',
+  pageId: 'pageId',
+  title: 'title',
+  answer: 'answer',
+  serviceName: 'serviceName',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FunnelOptionScalarFieldEnum = (typeof FunnelOptionScalarFieldEnum)[keyof typeof FunnelOptionScalarFieldEnum]
+
+
 export const KnowledgeGapScalarFieldEnum = {
   id: 'id',
   workspaceId: 'workspaceId',
@@ -2172,6 +2352,20 @@ export type ListEnumAppointmentStatusFieldRefInput<$PrismaModel> = FieldRefInput
 
 
 /**
+ * Reference to a field of type 'FunnelOptionIntent'
+ */
+export type EnumFunnelOptionIntentFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FunnelOptionIntent'>
+    
+
+
+/**
+ * Reference to a field of type 'FunnelOptionIntent[]'
+ */
+export type ListEnumFunnelOptionIntentFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FunnelOptionIntent[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -2310,6 +2504,8 @@ export type GlobalOmitConfig = {
   integration?: Prisma.IntegrationOmit
   bookingSlot?: Prisma.BookingSlotOmit
   appointment?: Prisma.AppointmentOmit
+  funnelOptionPage?: Prisma.FunnelOptionPageOmit
+  funnelOption?: Prisma.FunnelOptionOmit
   knowledgeGap?: Prisma.KnowledgeGapOmit
 }
 

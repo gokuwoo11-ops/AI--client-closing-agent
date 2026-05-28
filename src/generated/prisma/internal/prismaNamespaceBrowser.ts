@@ -67,6 +67,8 @@ export const ModelName = {
   Integration: 'Integration',
   BookingSlot: 'BookingSlot',
   Appointment: 'Appointment',
+  FunnelOptionPage: 'FunnelOptionPage',
+  FunnelOption: 'FunnelOption',
   KnowledgeGap: 'KnowledgeGap'
 } as const
 
@@ -331,6 +333,36 @@ export const AppointmentScalarFieldEnum = {
 } as const
 
 export type AppointmentScalarFieldEnum = (typeof AppointmentScalarFieldEnum)[keyof typeof AppointmentScalarFieldEnum]
+
+
+export const FunnelOptionPageScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  title: 'title',
+  subtitle: 'subtitle',
+  intent: 'intent',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FunnelOptionPageScalarFieldEnum = (typeof FunnelOptionPageScalarFieldEnum)[keyof typeof FunnelOptionPageScalarFieldEnum]
+
+
+export const FunnelOptionScalarFieldEnum = {
+  id: 'id',
+  pageId: 'pageId',
+  title: 'title',
+  answer: 'answer',
+  serviceName: 'serviceName',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FunnelOptionScalarFieldEnum = (typeof FunnelOptionScalarFieldEnum)[keyof typeof FunnelOptionScalarFieldEnum]
 
 
 export const KnowledgeGapScalarFieldEnum = {

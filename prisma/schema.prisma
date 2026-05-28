@@ -55,6 +55,12 @@ enum AppointmentStatus {
   COMPLETED
 }
 
+enum FunnelOptionIntent {
+  ENQUIRY
+  BOOKING
+  BOTH
+}
+
 // 1. Users
 model User {
   id            String            @id @default(uuid())
@@ -86,6 +92,7 @@ model Workspace {
   bookingSlots       BookingSlot[]
   appointments       Appointment[]
   knowledgeGaps      KnowledgeGap[]
+  funnelOptionPages FunnelOptionPage[]
 }
 
 // 3. Workspace Members
@@ -333,7 +340,40 @@ model Appointment {
 }
 
 
-// 17. Business knowledge gaps captured when the public assistant cannot answer from saved info
+// 17. Owner-configurable public funnel option pages
+model FunnelOptionPage {
+  id          String             @id @default(uuid())
+  workspaceId String
+  title       String
+  subtitle    String?
+  intent      FunnelOptionIntent @default(BOTH)
+  sortOrder   Int                @default(0)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  options     FunnelOption[]
+
+  @@index([workspaceId, intent, isActive])
+}
+
+// 18. Options shown on owner-configurable public funnel pages
+model FunnelOption {
+  id        String           @id @default(uuid())
+  pageId    String
+  title     String
+  answer    String           @db.Text
+  serviceName String?
+  sortOrder Int              @default(0)
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  page      FunnelOptionPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, isActive, sortOrder])
+}
+
+// 19. Business knowledge gaps captured when the public assistant cannot answer from saved info
 model KnowledgeGap {
   id            String    @id @default(uuid())
   workspaceId   String

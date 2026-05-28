@@ -84,6 +84,59 @@ export async function deleteFAQ(id: string) {
   return { success: true };
 }
 
+
+export async function saveFunnelOptionPage(data: { title: string; subtitle?: string; intent: "ENQUIRY" | "BOOKING" | "BOTH" }) {
+  if (!hasDatabase()) throw new Error("Database is not configured.");
+  const workspaceId = await requireCurrentWorkspaceId();
+  const { db } = await import("@/lib/db");
+  const pageCount = await (db as any).funnelOptionPage.count({ where: { workspaceId } });
+  const page = await (db as any).funnelOptionPage.create({
+    data: {
+      workspaceId,
+      title: data.title,
+      subtitle: data.subtitle || null,
+      intent: data.intent || "BOTH",
+      sortOrder: pageCount,
+    },
+    include: { options: { orderBy: { sortOrder: "asc" } } },
+  });
+  revalidatePath("/agent");
+  return { success: true, page };
+}
+
+export async function deleteFunnelOptionPage(id: string) {
+  if (!hasDatabase()) throw new Error("Database is not configured.");
+  const { db } = await import("@/lib/db");
+  await (db as any).funnelOptionPage.delete({ where: { id } });
+  revalidatePath("/agent");
+  return { success: true };
+}
+
+export async function saveFunnelOption(data: { pageId: string; title: string; answer: string; serviceName?: string }) {
+  if (!hasDatabase()) throw new Error("Database is not configured.");
+  const { db } = await import("@/lib/db");
+  const optionCount = await (db as any).funnelOption.count({ where: { pageId: data.pageId } });
+  const option = await (db as any).funnelOption.create({
+    data: {
+      pageId: data.pageId,
+      title: data.title,
+      answer: data.answer,
+      serviceName: data.serviceName || null,
+      sortOrder: optionCount,
+    },
+  });
+  revalidatePath("/agent");
+  return { success: true, option };
+}
+
+export async function deleteFunnelOption(id: string) {
+  if (!hasDatabase()) throw new Error("Database is not configured.");
+  const { db } = await import("@/lib/db");
+  await (db as any).funnelOption.delete({ where: { id } });
+  revalidatePath("/agent");
+  return { success: true };
+}
+
 export async function getAgentData() {
   if (!hasDatabase()) throw new Error("Database is not configured.");
   const { db } = await import("@/lib/db");
@@ -94,5 +147,10 @@ export async function getAgentData() {
     await ensureBusinessProfile(id);
     businessProfile = await (db as any).businessProfile.findUnique({ where: { workspaceId: id }, include: { services: true, faqs: true } });
   }
-  return { agentConfig, businessProfile };
+  const funnelOptionPages = await (db as any).funnelOptionPage.findMany({
+    where: { workspaceId: id, isActive: true },
+    orderBy: { sortOrder: "asc" },
+    include: { options: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
+  });
+  return { agentConfig, businessProfile, funnelOptionPages };
 }

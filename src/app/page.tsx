@@ -1,587 +1,937 @@
 "use client";
 
-import React, { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import {
-  Sparkles,
-  Bot,
-  MessageSquare,
-  TrendingUp,
-  Mail,
-  Zap,
-  Calendar,
-  ShieldCheck,
-  CheckCircle,
-  HelpCircle,
-  Building,
-  UserCheck,
-  ChevronRight,
   ArrowRight,
-  Play,
+  Bot,
+  Calendar,
+  CheckCircle2,
+  GitBranch,
+  Inbox,
+  LayoutDashboard,
+  MessageSquare,
+  Sparkles,
+  Users,
 } from "lucide-react";
+import { PremiumMotionBackground, StatusBadge } from "@/components/premium/PremiumMotionBackground";
 
-export default function LandingPage() {
-  const [activeTab, setActiveTab] = useState("agencies");
+/* ─── Static data — visual copy only, no real app state ─── */
+const PROOF_ITEMS = [
+  { label: "Supabase Auth workspace", green: true },
+  { label: "Gemini AI ready", green: true },
+  { label: "Real database capture", green: false },
+  { label: "Database-backed lead capture", green: false },
+];
 
-  const niches = [
-    {
-      id: "agencies",
-      label: "Agencies & Devs",
-      text: "Qualify high-ticket client inquiries, filter budget sizes, and book project discovery calls automatically.",
-    },
-    {
-      id: "realestate",
-      label: "Real Estate",
-      text: "Reply instantly to home seekers, gather timeline/budget preferences, and schedule property viewings.",
-    },
-    {
-      id: "clinics",
-      label: "Clinics & Coaches",
-      text: "Capture consult requests 24/7, answer common treatment/FAQ concerns, and secure calendar slots.",
-    },
-    {
-      id: "freelancers",
-      label: "Freelancers",
-      text: "Stop letting messages pile up. Let the AI qualify your leads and schedule them right into your Calendly.",
-    },
-  ];
+const WORKFLOW_STEPS = [
+  {
+    num: "01",
+    icon: MessageSquare,
+    iconColor: "rgba(124,58,237,0.15)",
+    iconText: "#a78bfa",
+    title: "Enquiry received",
+    desc: "A prospect messages via WhatsApp, Instagram, Facebook, email, or your website widget. The AI picks it up the moment it arrives.",
+    tag: "Any channel",
+    tagStyle: "border border-purple-500/20 bg-purple-500/10 text-purple-300",
+  },
+  {
+    num: "02",
+    icon: Bot,
+    iconColor: "rgba(6,182,212,0.15)",
+    iconText: "#67e8f9",
+    title: "AI replies instantly",
+    desc: "Gemini AI responds with your configured persona, guides prospects through your custom funnel options, and qualifies the lead in real time.",
+    tag: "< 2 sec response",
+    tagStyle: "border border-cyan-500/20 bg-cyan-500/10 text-cyan-300",
+  },
+  {
+    num: "03",
+    icon: Calendar,
+    iconColor: "rgba(236,72,153,0.15)",
+    iconText: "#f9a8d4",
+    title: "Appointment booked",
+    desc: "The prospect picks from your real configured time slots. The appointment is created in your system and their details are captured immediately.",
+    tag: "Real slots only",
+    tagStyle: "border border-pink-500/20 bg-pink-500/10 text-pink-300",
+  },
+  {
+    num: "04",
+    icon: CheckCircle2,
+    iconColor: "rgba(16,185,129,0.15)",
+    iconText: "#6ee7b7",
+    title: "Owner notified",
+    desc: "You receive a notification with full lead details — name, contact, service requested, requirements, and the confirmed booking time.",
+    tag: "Instant alert",
+    tagStyle: "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+  },
+];
+
+const FEATURE_CARDS = [
+  {
+    icon: Bot,
+    iconBg: "rgba(124,58,237,0.15)",
+    iconColor: "#a78bfa",
+    name: "Configurable AI Agent",
+    text: "Set your AI's name, persona, tone, and system prompt. Define your funnel options and let the AI guide prospects through your exact service menu — exactly as you'd do it yourself.",
+  },
+  {
+    icon: Inbox,
+    iconBg: "rgba(6,182,212,0.15)",
+    iconColor: "#67e8f9",
+    name: "Unified Inbox",
+    text: "Every conversation from every channel in one place. See the full AI conversation history, step in manually when needed, and track lead status without switching apps.",
+  },
+  {
+    icon: Users,
+    iconBg: "rgba(236,72,153,0.15)",
+    iconColor: "#f9a8d4",
+    name: "Lead Qualification",
+    text: "Every lead gets scored and categorised. The AI captures service need, budget, timeline, requirements, and contact info — creating a full lead profile automatically.",
+  },
+  {
+    icon: GitBranch,
+    iconBg: "rgba(245,158,11,0.15)",
+    iconColor: "#fcd34d",
+    name: "Option-Based Booking Funnel",
+    text: "Build multi-page funnel flows with service options, sub-options, and final actions. Prospects pick their path and land exactly where they should.",
+  },
+];
+
+const CHANNELS = [
+  { label: "WhatsApp", dot: "#25D366" },
+  { label: "Instagram DM", dot: "#E1306C" },
+  { label: "Facebook Messenger", dot: "#1877F2" },
+  { label: "Email", dot: "#ea4335" },
+  { label: "Website Widget", dot: "#7c3aed" },
+  { label: "Booking Funnel", dot: "#06b6d4" },
+  { label: "Lead Form", dot: "#f59e0b" },
+];
+
+/* ─── Dashboard Showcase ─── */
+function DashboardShowcase() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap || reduceMotion) return;
+    const parent = wrap.parentElement;
+    if (!parent) return;
+    const onMove = (e: MouseEvent) => {
+      const rect = parent.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const rx = ((e.clientY - cy) / rect.height) * 9;
+      const ry = ((e.clientX - cx) / rect.width) * -7;
+      wrap.style.transform = `perspective(1200px) rotateX(${6 + rx}deg) rotateY(${-2 + ry}deg)`;
+    };
+    const onLeave = () => {
+      wrap.style.transform = "perspective(1200px) rotateX(12deg) rotateY(-2deg)";
+    };
+    parent.addEventListener("mousemove", onMove);
+    parent.addEventListener("mouseleave", onLeave);
+    return () => {
+      parent.removeEventListener("mousemove", onMove);
+      parent.removeEventListener("mouseleave", onLeave);
+    };
+  }, [reduceMotion]);
 
   return (
-    <div className="bg-[#05070f] text-gray-100 min-h-screen relative overflow-hidden">
-      {/* Decorative Orbs */}
-      <div className="absolute top-[-10%] left-[-15%] w-[60%] h-[60%] bg-indigo-500/10 rounded-full blur-[150px] pointer-events-none animate-pulse-slow" />
-      <div className="absolute bottom-[-10%] right-[-15%] w-[60%] h-[60%] bg-pink-500/10 rounded-full blur-[150px] pointer-events-none animate-pulse-slow" />
-
-      {/* HEADER NAVBAR */}
-      <header className="border-b border-white/5 bg-[#05070f]/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500 to-pink-500 shadow-lg shadow-indigo-500/20">
-              <Sparkles className="h-5 w-5 text-white" />
+    <div className="relative mx-auto max-w-5xl px-4 pb-24">
+      {/* outer tilt wrapper */}
+      <div
+        ref={wrapRef}
+        style={{
+          transform: "perspective(1200px) rotateX(12deg) rotateY(-2deg)",
+          transformStyle: "preserve-3d",
+          transition: "transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94)",
+        }}
+      >
+        {/* main card */}
+        <div
+          className="overflow-hidden rounded-3xl border border-white/10"
+          style={{
+            background: "linear-gradient(160deg, rgba(20,22,36,0.96) 0%, rgba(13,16,24,0.99) 100%)",
+            boxShadow:
+              "0 0 0 1px rgba(255,255,255,0.05), 0 40px 90px rgba(0,0,0,0.72), 0 0 120px rgba(124,58,237,0.14), 0 0 220px rgba(236,72,153,0.07)",
+          }}
+        >
+          {/* browser topbar */}
+          <div className="flex items-center gap-3 border-b border-white/[0.06] bg-white/[0.02] px-5 py-4">
+            <div className="flex gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#ffc32d]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#29c940]" />
             </div>
-            <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-indigo-300 bg-clip-text text-transparent">
-              AI Client Closing Agent
-            </span>
+            <div className="flex-1 rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-1.5 font-mono text-[11px] text-white/30">
+              app.ai-client-closing.com/dashboard
+            </div>
+            <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-300">
+              <span
+                className="h-1.5 w-1.5 rounded-full bg-emerald-400"
+                style={{ animation: "draftly-pulse-dot 1.5s ease-in-out infinite" }}
+              />
+              AI live
+            </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
-            <Link href="#problem" className="hover:text-white transition-colors">The Problem</Link>
-            <Link href="#features" className="hover:text-white transition-colors">Features</Link>
-            <Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link>
-            <Link href="#faq" className="hover:text-white transition-colors">FAQ</Link>
-          </nav>
-
-          <div className="flex items-center gap-4">
-            <Link
-              href="/sign-in"
-              className="text-sm font-semibold text-gray-300 hover:text-white transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/sign-up"
-              className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-md shadow-indigo-500/10 transition-colors"
-            >
-              Start Setup
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* HERO SECTION */}
-      <section className="relative pt-12 pb-24 md:py-32">
-        <div className="max-w-5xl mx-auto px-6 text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider">
-            <Sparkles className="h-3.5 w-3.5" />
-            Omnichannel AI Closing Inbox
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight">
-            Turn Client Inquiries Into{" "}
-            <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
-              Booked Calls Automatically
-            </span>
-          </h1>
-
-          <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-3xl mx-auto font-medium">
-            AI Client Closing Agent replies instantly to new leads, asks the right questions, follows up, and helps book appointments while you focus on your work.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link
-              href="/sign-up"
-              className="group w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2.5 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
-            >
-              Start Setup
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link
-              href="/sign-in"
-              className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Play className="h-4 w-4 fill-white" />
-              View Product Flow
-            </Link>
-          </div>
-
-          {/* Product Interface Preview */}
-          <div className="pt-12">
-            <div className="glassmorphism rounded-2xl border border-white/5 p-3 shadow-2xl max-w-4xl mx-auto relative group">
-              <div className="absolute inset-0 bg-indigo-500/5 rounded-2xl blur-xl pointer-events-none group-hover:bg-indigo-500/10 transition-all duration-300" />
-              <div className="bg-[#090c15] rounded-xl overflow-hidden border border-white/5 aspect-[16/10] flex flex-col">
-                {/* Browser Bar */}
-                <div className="bg-[#0c101d] px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-red-500/40" />
-                    <span className="w-3 h-3 rounded-full bg-yellow-500/40" />
-                    <span className="w-3 h-3 rounded-full bg-green-500/40" />
-                  </div>
-                  <div className="bg-white/5 rounded-md text-[10px] text-gray-500 px-6 py-1 mx-auto w-80 truncate text-center">
-                    https://closingagent.ai/dashboard
-                  </div>
+          {/* body grid */}
+          <div className="grid" style={{ gridTemplateColumns: "220px 1fr", minHeight: 480 }}>
+            {/* sidebar */}
+            <div className="border-r border-white/[0.06] bg-black/20 p-5">
+              {/* logo */}
+              <div className="mb-6 flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-gradient-to-br from-violet-600 to-pink-500">
+                  <Sparkles className="h-3.5 w-3.5 text-white" />
                 </div>
-                {/* Product Content */}
-                <div className="flex-1 flex text-left text-xs text-gray-400 overflow-hidden">
-                  <div className="w-48 bg-[#0a0d17] p-4 border-r border-white/5 hidden md:block space-y-4">
-                    <div className="h-4 w-28 bg-white/10 rounded-md" />
-                    <div className="space-y-2">
-                      <div className="h-6 w-full bg-indigo-600/10 border border-indigo-500/20 rounded-md" />
-                      <div className="h-6 w-full bg-white/5 rounded-md" />
-                      <div className="h-6 w-full bg-white/5 rounded-md" />
-                    </div>
-                  </div>
-                  <div className="flex-1 p-6 flex flex-col justify-between">
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center pb-4 border-b border-white/5">
-                        <div>
-                          <p className="text-white font-bold text-sm">Leads Overview</p>
-                          <p className="text-[10px] text-gray-500">Live AI agent closed transactions</p>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-semibold text-[10px]">
-                          18 Active Closing
-                        </span>
-                      </div>
-                      {/* Conversation Preview */}
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-2.5">
-                          <div className="h-7 w-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-[10px]">L</div>
-                          <div className="bg-[#0f1423] p-3 rounded-xl rounded-tl-none border border-white/5 max-w-sm">
-                            <p className="text-gray-300 leading-relaxed text-[11px]">Hi, I need a modern marketing website built for my interior design agency. My budget is $5,000 and I need it in 4 weeks.</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start justify-end gap-2.5">
-                          <div className="bg-indigo-600/10 border border-indigo-500/20 p-3 rounded-xl rounded-tr-none max-w-sm text-right">
-                            <p className="text-indigo-200 leading-relaxed text-[11px]">That sounds like a beautiful project! I can confirm our design team regularly delivers customized agency portfolios inside 3-4 weeks. Let&apos;s get you scheduled. Click below to book:</p>
-                            <span className="inline-block mt-2 text-[10px] bg-indigo-600 text-white font-bold px-3 py-1 rounded-md">📅 Book Discovery Call</span>
-                          </div>
-                          <div className="h-7 w-7 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[10px]">AI</div>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Metrics Footer */}
-                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/5 text-center">
-                      <div>
-                        <p className="text-[10px] text-gray-500">Leads Today</p>
-                        <p className="text-white font-bold text-sm">+24</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500">Conversion Rate</p>
-                        <p className="text-emerald-400 font-bold text-sm">34.8%</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500">Hours Saved</p>
-                        <p className="text-indigo-400 font-bold text-sm">45 hrs</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <span className="font-display text-sm font-bold text-white">AI Client Closing</span>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PROBLEM SECTION */}
-      <section id="problem" className="py-20 border-t border-white/5 bg-[#090b15]/50">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center space-y-4 max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white">Why service businesses lose clients online</h2>
-            <p className="text-gray-400">
-              When an inquiry comes in, your response time is the single most critical factor deciding whether a lead buys from you or goes to a competitor.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-red-500/20 transition-colors">
-              <div className="h-10 w-10 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center text-red-400 mb-4">
-                <Zap className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">The Speed Dilemma</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Replying more than 5 minutes late decreases your chances of qualifying a lead by 10x. But you cannot stay glued to your phone 24/7.
-              </p>
-            </div>
-
-            <div className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-red-500/20 transition-colors">
-              <div className="h-10 w-10 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center text-red-400 mb-4">
-                <Mail className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">Manual Follow-ups</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Over 70% of business inquiries are lost because owners forget to follow up. Writing manual sequence check-ins is exhausting and slow.
-              </p>
-            </div>
-
-            <div className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-red-500/20 transition-colors">
-              <div className="h-10 w-10 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center text-red-400 mb-4">
-                <Bot className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">Basic Chatbot Failure</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Standard chatbots feel robotic, fail to qualify, cannot address custom services, and don&apos;t save structured contact profiles.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SOLUTION / NICHE USE CASE MODULE */}
-      <section className="py-20 border-t border-white/5">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h2 className="text-3xl font-extrabold text-white leading-tight">
-                Designed to close clients in any industry niche
-              </h2>
-              <p className="text-gray-400">
-                AI Client Closing Agent connects immediately with your specific service catalogue, team working hours, and standard business FAQs to generate responses that convert.
-              </p>
-              <div className="space-y-3">
-                {niches.map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => setActiveTab(n.id)}
-                    className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer ${
-                      activeTab === n.id
-                        ? "bg-indigo-600/10 border-indigo-500/30 text-indigo-300 font-bold shadow-md shadow-indigo-500/5"
-                        : "bg-white/[0.01] border-white/5 text-gray-400 hover:bg-white/5 hover:text-white"
+              {/* nav items */}
+              <div className="space-y-0.5">
+                {[
+                  { icon: LayoutDashboard, label: "Dashboard", active: true },
+                  { icon: Inbox, label: "Inbox", badge: "4" },
+                  { icon: Users, label: "Leads" },
+                  { icon: Bot, label: "AI Receptionist" },
+                  { icon: Calendar, label: "Appointments" },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-[12px] font-medium ${
+                      item.active
+                        ? "bg-violet-500/20 text-violet-300"
+                        : "text-white/40 hover:text-white/60"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{n.label}</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </div>
-                    {activeTab === n.id && (
-                      <p className="text-xs text-gray-400 mt-2 font-normal leading-relaxed">{n.text}</p>
+                    <item.icon className="h-3.5 w-3.5 shrink-0" />
+                    {item.label}
+                    {item.badge && (
+                      <span className="ml-auto rounded-full border border-pink-400/30 bg-pink-500/15 px-1.5 py-0.5 text-[9px] font-bold text-pink-300">
+                        {item.badge}
+                      </span>
                     )}
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
-            {/* Visual Panel representing chat widget */}
-            <div className="glassmorphism rounded-2xl border border-white/5 p-6 shadow-2xl relative">
-              <p className="text-white font-bold text-sm mb-4 flex items-center gap-2">
-                <Bot className="h-4.5 w-4.5 text-indigo-400" />
-                Contextual Conversation Qualify Funnel
-              </p>
-              <div className="bg-[#060812] rounded-xl border border-white/5 p-4 space-y-4 text-xs">
-                <div className="space-y-2">
-                  <span className="text-[10px] text-gray-500 uppercase font-semibold">AI Assistant Step Checklist:</span>
-                  <div className="flex items-center gap-2 text-indigo-300">
-                    <CheckCircle className="h-4 w-4 text-indigo-400 shrink-0" />
-                    <span>Collect Lead Details (Name, Phone, Email)</span>
+
+            {/* main content */}
+            <div className="overflow-hidden p-5">
+              <div className="mb-4">
+                <p className="font-display text-[15px] font-bold text-white">Command Center</p>
+                <p className="text-[11px] text-white/35">Live workspace data — leads, bookings, and pipeline</p>
+              </div>
+
+              {/* stat row */}
+              <div className="mb-4 grid grid-cols-4 gap-2.5">
+                {[
+                  { label: "Today's bookings", value: "—", trend: "Live" },
+                  { label: "New enquiries",    value: "—", trend: "Active" },
+                  { label: "Upcoming appts",   value: "—", trend: "Confirmed" },
+                  { label: "Closed / Won",     value: "—", trend: "This month" },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3"
+                  >
+                    <p className="text-[9px] font-semibold uppercase tracking-widest text-white/30">
+                      {s.label}
+                    </p>
+                    <p className="mt-1.5 font-display text-2xl font-black text-white">{s.value}</p>
+                    <p className="mt-1 text-[9px] font-semibold text-emerald-400/80">{s.trend}</p>
                   </div>
-                  <div className="flex items-center gap-2 text-indigo-300">
-                    <CheckCircle className="h-4 w-4 text-indigo-400 shrink-0" />
-                    <span>Validate Service Match & Budget Range</span>
+                ))}
+              </div>
+
+              {/* lead rows — visual illustration only */}
+              <div className="space-y-2">
+                {[
+                  { initials: "SJ", grad: "from-violet-600 to-purple-500", source: "WhatsApp · Wedding enquiry",      status: "Booked",    badgeCls: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30" },
+                  { initials: "MT", grad: "from-cyan-600 to-sky-500",      source: "Instagram · Photography DM",       status: "Qualified", badgeCls: "bg-amber-500/15  text-amber-300  border-amber-400/30"  },
+                  { initials: "RP", grad: "from-pink-600 to-rose-500",     source: "Website widget · Coaching enquiry", status: "New",       badgeCls: "bg-violet-500/15 text-violet-300 border-violet-400/30" },
+                  { initials: "DK", grad: "from-emerald-600 to-teal-500",  source: "Facebook · Salon booking",         status: "Booked",    badgeCls: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30" },
+                ].map((lead) => (
+                  <div
+                    key={lead.initials}
+                    className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 transition hover:border-violet-400/20 hover:bg-violet-500/[0.06]"
+                  >
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br text-[11px] font-bold text-white ${lead.grad}`}
+                    >
+                      {lead.initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-semibold text-white/80">{lead.source}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-semibold ${lead.badgeCls}`}
+                    >
+                      {lead.status}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2 text-indigo-300 animate-pulse">
-                    <span className="h-2 w-2 rounded-full bg-pink-500 shrink-0 animate-ping" />
-                    <span>Offer Custom Calendly Meeting Link</span>
-                  </div>
-                </div>
-                <div className="border-t border-white/5 pt-3 mt-3">
-                  <p className="text-[10px] text-gray-500 uppercase font-semibold mb-2">Automated Owner SMS & Email Alert:</p>
-                  <div className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-1">
-                    <p className="text-[11px] text-white font-bold">🚨 New Qualified Booking Call</p>
-                    <p className="text-[10px] text-gray-400 font-medium">Lead: Marcus Aurelius &bull; $4,500 Web Budget</p>
-                    <p className="text-[10px] text-indigo-400 hover:underline">Link to Lead Profile &rarr;</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* CORE FEATURES */}
-      <section id="features" className="py-20 border-t border-white/5 bg-[#090b15]/50">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center space-y-4 max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white">Full-stack SaaS modules to double your sales</h2>
-            <p className="text-gray-400">
-              Not just a simple script. AI Client Closing Agent offers a full lead management suite out of the box.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="p-6 bg-white/[0.01] border border-white/5 rounded-2xl hover:bg-white/[0.02] hover:-translate-y-0.5 active:translate-y-0 transition-all">
-              <Bot className="h-8 w-8 text-indigo-400 mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">Intelligent LLM Reply</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Uses GPT-4o systems combined with your uploaded services and FAQ sheets to speak like a professional sales person.
-              </p>
+        {/* ── Floating AI chat card ── */}
+        <motion.div
+          className="absolute -right-16 top-16 w-60 rounded-2xl border border-white/10 p-3.5 backdrop-blur-2xl"
+          style={{
+            background: "rgba(13,16,24,0.95)",
+            boxShadow: "0 24px 60px rgba(0,0,0,0.65), 0 0 40px rgba(124,58,237,0.2)",
+            transformStyle: "preserve-3d",
+            transform: "translateZ(40px)",
+          }}
+          animate={reduceMotion ? {} : { y: [0, -14, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="mb-2.5 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-pink-500 shrink-0">
+              <Bot className="h-3 w-3 text-white" />
             </div>
-            {/* Feature 2 */}
-            <div className="p-6 bg-white/[0.01] border border-white/5 rounded-2xl hover:bg-white/[0.02] hover:-translate-y-0.5 active:translate-y-0 transition-all">
-              <MessageSquare className="h-8 w-8 text-pink-400 mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">Embeddable Web Widget</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Copy and paste a simple &lt;script&gt; tag into your site to instantly load a gorgeous floating qualifying bot.
-              </p>
-            </div>
-            {/* Feature 3 */}
-            <div className="p-6 bg-white/[0.01] border border-white/5 rounded-2xl hover:bg-white/[0.02] hover:-translate-y-0.5 active:translate-y-0 transition-all">
-              <TrendingUp className="h-8 w-8 text-purple-400 mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">Lead CRM Dashboard</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                View incoming contacts in real-time. Review summaries, lead scores, and see chronology messages in a clean portal.
-              </p>
-            </div>
-            {/* Feature 4 */}
-            <div className="p-6 bg-white/[0.01] border border-white/5 rounded-2xl hover:bg-white/[0.02] hover:-translate-y-0.5 active:translate-y-0 transition-all">
-              <Mail className="h-8 w-8 text-emerald-400 mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">Follow-up Sequences</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Create sequence rules to automatically send email/widget follow-ups if a user becomes inactive before scheduling.
-              </p>
-            </div>
-            {/* Feature 5 */}
-            <div className="p-6 bg-white/[0.01] border border-white/5 rounded-2xl hover:bg-white/[0.02] hover:-translate-y-0.5 active:translate-y-0 transition-all">
-              <Calendar className="h-8 w-8 text-yellow-400 mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">Direct Booking Integration</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Plugs straight into your Calendly or Google appointment system to present slots inside the conversation window.
-              </p>
-            </div>
-            {/* Feature 6 */}
-            <div className="p-6 bg-white/[0.01] border border-white/5 rounded-2xl hover:bg-white/[0.02] hover:-translate-y-0.5 active:translate-y-0 transition-all">
-              <ShieldCheck className="h-8 w-8 text-indigo-400 mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">Agency Workspace Mode</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Create separate workspace accounts for your own clients. Manage all separate bots, widgets, and leads lists under one roof.
-              </p>
+            <div>
+              <p className="text-[11px] font-bold text-white">AI Receptionist</p>
+              <p className="text-[10px] text-white/35">Responding instantly</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* PRICING MODULE */}
-      <section id="pricing" className="py-20 border-t border-white/5">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center space-y-4 max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white">SaaS Pricing Plans</h2>
-            <p className="text-gray-400">
-              Get started with a 14-day free trial on any plan. Cancel anytime.
-            </p>
+          <div className="mb-1.5 ml-4 rounded-xl bg-white/[0.06] px-2.5 py-2 text-[11px] leading-relaxed text-white/60">
+            Hi, I need help with pricing and availability
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Plan 1 */}
-            <div className="p-8 bg-white/[0.01] border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/10 transition-colors">
-              <div>
-                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Starter</span>
-                <div className="mt-4 flex items-baseline text-white">
-                  <span className="text-4xl font-extrabold tracking-tight">$39</span>
-                  <span className="ml-1 text-sm font-semibold text-gray-500">/mo</span>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">Best for solo consultants & freelancers</p>
-                <div className="border-t border-white/5 my-6" />
-                <ul className="space-y-4 text-xs text-gray-300">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>1 AI Closing Agent</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>100 leads / month limit</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>Sleek Chat Widget & Form</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>Basic CRM Database</span>
-                  </li>
-                </ul>
-              </div>
-              <Link
-                href="/sign-up"
-                className="mt-8 w-full py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold text-center border border-white/10 transition-colors cursor-pointer"
-              >
-                Start Trial
-              </Link>
-            </div>
-
-            {/* Plan 2 */}
-            <div className="p-8 bg-indigo-600/5 border-2 border-indigo-500 rounded-2xl flex flex-col justify-between shadow-xl shadow-indigo-500/5 relative">
-              <span className="absolute top-4 right-4 px-2 py-0.5 rounded-full bg-indigo-500 text-[9px] font-bold text-white uppercase">Popular</span>
-              <div>
-                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Pro</span>
-                <div className="mt-4 flex items-baseline text-white">
-                  <span className="text-4xl font-extrabold tracking-tight">$79</span>
-                  <span className="ml-1 text-sm font-semibold text-gray-500">/mo</span>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">Perfect for growing service agencies</p>
-                <div className="border-t border-indigo-500/20 my-6" />
-                <ul className="space-y-4 text-xs text-gray-300">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>3 AI Closing Agents</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>1,000 leads / month</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>Automated Follow-ups</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>Deep Visual CRM Analytics</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>Branding Removal Option</span>
-                  </li>
-                </ul>
-              </div>
-              <Link
-                href="/sign-up"
-                className="mt-8 w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold text-center transition-colors cursor-pointer"
-              >
-                Start Trial
-              </Link>
-            </div>
-
-            {/* Plan 3 */}
-            <div className="p-8 bg-white/[0.01] border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/10 transition-colors">
-              <div>
-                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Agency</span>
-                <div className="mt-4 flex items-baseline text-white">
-                  <span className="text-4xl font-extrabold tracking-tight">$149</span>
-                  <span className="ml-1 text-sm font-semibold text-gray-500">/mo</span>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">For web designers managing client sites</p>
-                <div className="border-t border-white/5 my-6" />
-                <ul className="space-y-4 text-xs text-gray-300">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>Unlimited AI Agents</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>Unlimited Leads List</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>Multi-Workspace Control</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>White-Label Brand Setup</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-indigo-400" />
-                    <span>Add Team Members</span>
-                  </li>
-                </ul>
-              </div>
-              <Link
-                href="/sign-up"
-                className="mt-8 w-full py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold text-center border border-white/10 transition-colors cursor-pointer"
-              >
-                Start Trial
-              </Link>
-            </div>
+          <div
+            className="rounded-xl border border-violet-400/25 bg-violet-500/15 px-2.5 py-2 text-[11px] leading-relaxed text-slate-200"
+          >
+            Hi! I&apos;d love to help. Which package are you interested in — full-day, half-day, or a custom option?
           </div>
-        </div>
-      </section>
+          <TypingIndicator />
+        </motion.div>
 
-      {/* FAQ SECTION */}
-      <section id="faq" className="py-20 border-t border-white/5 bg-[#090b15]/50">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl font-extrabold text-white">Frequently Asked Questions</h2>
-            <p className="text-gray-400">Everything you need to know about the AI Closing Sales Assistant</p>
+        {/* ── Floating owner notification card ── */}
+        <motion.div
+          className="absolute -left-20 bottom-16 w-56 rounded-2xl border border-emerald-400/20 p-3 backdrop-blur-2xl"
+          style={{
+            background: "rgba(13,16,24,0.95)",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.6), 0 0 30px rgba(16,185,129,0.12)",
+            transformStyle: "preserve-3d",
+            transform: "translateZ(30px)",
+          }}
+          animate={reduceMotion ? {} : { y: [0, 12, 0] }}
+          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="mb-2 flex items-center gap-2">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-500/15">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+            </div>
+            <p className="text-[11px] font-bold text-emerald-300">New booking confirmed</p>
           </div>
-
-          <div className="space-y-4">
-            <div className="p-5 bg-white/[0.01] border border-white/5 rounded-xl">
-              <h3 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                <HelpCircle className="h-4.5 w-4.5 text-indigo-400" />
-                Will the AI make fake promises or change my prices?
-              </h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Absolutely not. The AI agent operates inside strict guidelines based solely on the business profile information, FAQ sheets, and service details you configure. If asked a question that isn&apos;t in your knowledge base or files, the agent will gracefully declare it doesn&apos;t know and tag the lead for human handoff.
-              </p>
-            </div>
-
-            <div className="p-5 bg-white/[0.01] border border-white/5 rounded-xl">
-              <h3 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                <HelpCircle className="h-4.5 w-4.5 text-indigo-400" />
-                How does the embeddable chat widget load?
-              </h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                It loads via a tiny asynchronously-delivered JavaScript block. In your dashboard, you will receive a custom snippet. Copy and paste it immediately before the closing `&lt;/body&gt;` tag of any website (WordPress, Framer, Webflow, Shopify, custom HTML) and the bubble is live instantly.
-              </p>
-            </div>
-
-            <div className="p-5 bg-white/[0.01] border border-white/5 rounded-xl">
-              <h3 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                <HelpCircle className="h-4.5 w-4.5 text-indigo-400" />
-                Can I connect separate widgets for my clients?
-              </h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Yes! With the Agency Tier, you can open discrete client workspace accounts. Each workspace maintains its own database, FAQs, services list, custom AI agent configuration, and analytics logs to keep details separated.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FINAL CTA */}
-      <section className="py-24 border-t border-white/5 text-center relative">
-        <div className="max-w-4xl mx-auto px-6 space-y-6">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white">Start booking qualified calls on autopilot</h2>
-          <p className="text-base text-gray-400 max-w-xl mx-auto">
-            Join agencies and freelancers saving hours of manual replies and sealing high-ticket clients every day.
+          <p className="text-[11px] leading-relaxed text-white/50">
+            A new appointment has been created and saved to your workspace.
           </p>
-          <div className="pt-4">
+          <p className="mt-1.5 text-[10px] text-white/25">Just now · via AI closing flow</p>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Typing indicator ─── */
+function TypingIndicator() {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const id = setInterval(() => setVisible((v) => !v), 3000);
+    return () => clearInterval(id);
+  }, []);
+  if (!visible) return null;
+  return (
+    <div className="mt-1.5 flex items-center gap-1 px-1 py-1">
+      {[0, 0.2, 0.4].map((delay, i) => (
+        <span
+          key={i}
+          className="h-1.5 w-1.5 rounded-full bg-violet-400/60"
+          style={{ animation: `draftly-typing 1.2s ${delay}s ease-in-out infinite` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ─── Inbox Preview ─── */
+function InboxPreview() {
+  return (
+    <div
+      className="overflow-hidden rounded-3xl border border-white/[0.08]"
+      style={{
+        background: "rgba(10,12,20,0.96)",
+        boxShadow: "0 32px 80px rgba(0,0,0,0.5), 0 0 80px rgba(124,58,237,0.07)",
+      }}
+    >
+      <div className="grid" style={{ gridTemplateColumns: "280px 1fr" }}>
+        {/* conversation list */}
+        <div className="border-r border-white/[0.06] py-4">
+          <div className="mx-3 mb-3 flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-[11px] text-white/25">
+            <Inbox className="h-3 w-3 shrink-0" />
+            Search conversations
+          </div>
+          <div className="mb-2 flex gap-1 px-3">
+            {["All", "Enquiries", "Booked"].map((tab, i) => (
+              <button
+                key={tab}
+                className={`rounded-lg px-3 py-1 text-[11px] font-semibold ${
+                  i === 0 ? "bg-violet-500/20 text-violet-300" : "text-white/35"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          {[
+            { initials: "SJ", grad: "from-violet-600 to-purple-500", name: "Sarah Johnson",  preview: "AI: Would you like the full-day package?",  time: "2m",  unread: 2,  active: true },
+            { initials: "MT", grad: "from-cyan-600   to-sky-500",    name: "Marcus Thompson", preview: "Booking confirmed for Wednesday ✓",           time: "18m", unread: 0,  active: false },
+            { initials: "RP", grad: "from-pink-600   to-rose-500",   name: "Rachel Patel",    preview: "AI: What's your timeline for this project?", time: "42m", unread: 1,  active: false },
+            { initials: "DK", grad: "from-emerald-600 to-teal-500", name: "David Kim",       preview: "Thanks for confirming my slot!",              time: "1hr", unread: 0,  active: false },
+          ].map((c) => (
+            <div
+              key={c.initials}
+              className={`flex cursor-pointer items-start gap-2.5 border-l-2 px-3 py-2.5 transition ${
+                c.active
+                  ? "border-violet-500/60 bg-violet-500/[0.08]"
+                  : "border-transparent hover:bg-white/[0.03]"
+              }`}
+            >
+              <div
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-[11px] font-bold text-white ${c.grad}`}
+              >
+                {c.initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] font-semibold text-white/80">{c.name}</p>
+                <p className="truncate text-[10px] text-white/35">{c.preview}</p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <p className="text-[10px] text-white/25">{c.time}</p>
+                {c.unread > 0 && (
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-violet-500/80 text-[9px] font-bold text-white">
+                    {c.unread}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* chat panel */}
+        <div className="flex min-h-[460px] flex-col">
+          <div className="flex items-center justify-between border-b border-white/[0.06] bg-black/20 px-5 py-3.5">
+            <div>
+              <p className="text-[13px] font-bold text-white">Sarah Johnson</p>
+              <p className="text-[11px] text-white/35">WhatsApp · Service enquiry</p>
+            </div>
+            <div className="flex gap-2">
+              <button className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white/50 hover:text-white/80">
+                View lead
+              </button>
+              <button className="rounded-lg border border-violet-400/35 bg-violet-500/15 px-3 py-1.5 text-[11px] font-semibold text-violet-300">
+                Book appointment
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-1 flex-col gap-3 overflow-hidden p-5">
+            {/* user message */}
+            <div className="flex max-w-[72%] flex-col">
+              <div className="rounded-2xl rounded-tl-sm bg-white/[0.06] px-3.5 py-2.5 text-[12px] leading-relaxed text-white/70">
+                Hi, I need help with pricing and availability for my project
+              </div>
+              <p className="mt-1 text-[10px] text-white/25">via WhatsApp</p>
+            </div>
+            {/* AI reply */}
+            <div className="flex max-w-[72%] flex-col self-end">
+              <div
+                className="rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-[12px] leading-relaxed text-white"
+                style={{
+                  background: "linear-gradient(135deg, rgba(124,58,237,0.55), rgba(236,72,153,0.35))",
+                  border: "1px solid rgba(124,58,237,0.3)",
+                }}
+              >
+                Hi! I&apos;d love to help. We have a few packages — are you looking for our full-service, standard, or budget option? Each covers different scopes and timelines.
+              </div>
+              <div className="mt-1 flex items-center gap-1.5">
+                <span className="rounded border border-violet-400/25 bg-violet-500/15 px-1.5 text-[9px] font-bold text-violet-300">
+                  AI
+                </span>
+                <p className="text-[10px] text-white/25">AI Client Closing Assistant</p>
+              </div>
+            </div>
+            {/* follow-up user */}
+            <div className="flex max-w-[72%] flex-col">
+              <div className="rounded-2xl rounded-tl-sm bg-white/[0.06] px-3.5 py-2.5 text-[12px] leading-relaxed text-white/70">
+                Full-service please! What&apos;s the process?
+              </div>
+              <p className="mt-1 text-[10px] text-white/25">via WhatsApp</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 border-t border-white/[0.06] px-4 py-3.5">
+            <div className="flex-1 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-2.5 text-[12px] text-white/25">
+              Reply manually or let AI continue…
+            </div>
+            <button
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_4px_16px_rgba(124,58,237,0.4)]"
+              style={{ background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}
+            >
+              <ArrowRight className="h-3.5 w-3.5 text-white" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Scroll reveal hook ─── */
+function useReveal() {
+  useEffect(() => {
+    const els = document.querySelectorAll<HTMLElement>(".draftly-reveal");
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add("in"); }),
+      { threshold: 0.1 },
+    );
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+}
+
+/* ─── Main page ─── */
+export default function LandingPage() {
+  useReveal();
+
+  return (
+    <PremiumMotionBackground>
+      <main className="min-h-screen text-white">
+
+        {/* ── Nav ── */}
+        <motion.header
+          initial={{ opacity: 0, y: -14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="fixed left-0 right-0 top-0 z-50 px-4 pt-4 sm:px-6"
+        >
+          <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-[1.4rem] border border-white/10 bg-[rgba(13,16,24,0.65)] px-5 py-3 shadow-[0_8px_48px_rgba(0,0,0,0.45)] backdrop-blur-[28px]">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-violet-600 via-pink-500 to-fuchsia-500 shadow-[0_0_28px_rgba(124,58,237,0.5)]">
+                <Sparkles className="h-4.5 w-4.5 text-white" />
+                <span
+                  className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400"
+                  style={{
+                    boxShadow: "0 0 10px rgba(52,211,153,0.9)",
+                    animation: "draftly-pulse-dot 2s ease-in-out infinite",
+                  }}
+                />
+              </div>
+              <div>
+                <p className="font-display text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                  AI Receptionist
+                </p>
+                <span className="font-display text-[17px] font-extrabold text-white leading-none">
+                  AI Client Closing
+                </span>
+              </div>
+            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/sign-in"
+                className="hidden rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/65 transition hover:bg-white/[0.09] hover:text-white sm:inline-flex"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 px-4 py-2 text-sm font-bold text-white shadow-[0_8px_28px_rgba(124,58,237,0.4)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(124,58,237,0.55)]"
+              >
+                Start free <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </nav>
+        </motion.header>
+
+        {/* ── Hero ── */}
+        <section className="flex min-h-screen flex-col items-center justify-center px-4 pb-12 pt-32 text-center sm:px-6">
+          {/* eyebrow */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-7 inline-flex items-center gap-2 rounded-full border border-violet-400/35 bg-violet-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.09em] text-violet-300 backdrop-blur-sm"
+          >
+            <span
+              className="h-1.5 w-1.5 rounded-full bg-emerald-400"
+              style={{
+                boxShadow: "0 0 8px rgba(52,211,153,0.9)",
+                animation: "draftly-pulse-dot 1.5s ease-in-out infinite",
+              }}
+            />
+            Real database-backed MVP for leads and bookings
+          </motion.div>
+
+          {/* headline */}
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, delay: 0.08 }}
+          >
+            <p
+              className="mb-3 text-3xl text-pink-200/75 sm:text-4xl"
+              style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontStyle: "italic" }}
+            >
+              Capture. Qualify. Book.
+            </p>
+            <h1
+              className="max-w-5xl text-5xl font-black leading-[0.94] tracking-[-0.03em] text-white sm:text-7xl lg:text-8xl"
+              style={{ fontFamily: "'Syne', sans-serif" }}
+            >
+              Your AI closes clients{" "}
+              <span
+                style={{
+                  background: "linear-gradient(135deg,#a78bfa 0%,#f472b6 40%,#38bdf8 100%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                while you sleep.
+              </span>
+            </h1>
+          </motion.div>
+
+          {/* description */}
+          <motion.p
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.18 }}
+            className="mx-auto mt-6 max-w-2xl text-lg font-medium leading-8 text-slate-300/65"
+          >
+            An intelligent AI receptionist that handles every enquiry from WhatsApp, Instagram,
+            Facebook, email, and your website — instantly replying, qualifying leads, and booking
+            appointments into your calendar.
+          </motion.p>
+
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.26 }}
+            className="mt-9 flex flex-col items-center gap-3 sm:flex-row"
+          >
             <Link
               href="/sign-up"
-              className="inline-flex group px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all items-center gap-2 cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 px-8 py-4 text-[15px] font-bold text-white shadow-[0_12px_40px_rgba(124,58,237,0.42)] transition hover:-translate-y-1 hover:shadow-[0_20px_56px_rgba(124,58,237,0.58)]"
+              style={{ fontFamily: "'Syne',sans-serif" }}
             >
-              Get Started for Free
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              Create your workspace <ArrowRight className="h-4 w-4" />
             </Link>
-          </div>
-        </div>
-      </section>
+            <Link
+              href="/sign-in"
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-7 py-4 text-[15px] font-semibold text-white backdrop-blur-sm transition hover:bg-white/[0.1]"
+            >
+              <Inbox className="h-4 w-4" /> Owner login
+            </Link>
+          </motion.div>
 
-      {/* FOOTER */}
-      <footer className="border-t border-white/5 bg-[#05070f] py-12 text-center text-xs text-gray-500">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-indigo-400" />
-            <span className="font-bold text-white text-sm">AI Client Closing Agent</span>
+          {/* proof badges */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.38 }}
+            className="mt-8 flex flex-wrap justify-center gap-2"
+          >
+            {PROOF_ITEMS.map((item) => (
+              <StatusBadge key={item.label} tone={item.green ? "emerald" : "violet"}>
+                {item.label}
+              </StatusBadge>
+            ))}
+          </motion.div>
+        </section>
+
+        {/* ── 3D Dashboard ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.55 }}
+        >
+          <DashboardShowcase />
+        </motion.div>
+
+        {/* ── Workflow ── */}
+        <section id="workflow" className="px-4 py-24 sm:px-6">
+          <div className="mx-auto max-w-6xl">
+            <div className="draftly-reveal mb-3 flex items-center gap-3">
+              <span className="h-px w-6 bg-violet-500/60" />
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-violet-400">
+                The flow
+              </p>
+            </div>
+            <h2
+              className="draftly-reveal mb-5 max-w-2xl text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl"
+              style={{ fontFamily: "'Syne',sans-serif" }}
+            >
+              From first message to booked appointment.
+            </h2>
+            <p className="draftly-reveal draftly-reveal-d1 mb-14 max-w-xl text-lg leading-relaxed text-white/50">
+              Your AI agent handles every step so you never miss a lead, no matter the channel or
+              time of day.
+            </p>
+
+            <div className="draftly-reveal draftly-reveal-d2 grid gap-px overflow-hidden rounded-2xl border border-white/[0.06] sm:grid-cols-2 xl:grid-cols-4" style={{ background: "rgba(255,255,255,0.04)" }}>
+              {WORKFLOW_STEPS.map((step) => {
+                const Icon = step.icon;
+                return (
+                  <div
+                    key={step.num}
+                    className="group relative overflow-hidden bg-[#06070f] p-7 transition hover:bg-violet-950/30"
+                  >
+                    <span
+                      className="absolute right-4 top-3 font-display text-5xl font-black leading-none tracking-[-0.04em] text-white/[0.03]"
+                      style={{ fontFamily: "'Syne',sans-serif" }}
+                    >
+                      {step.num}
+                    </span>
+                    <div
+                      className="mb-4 flex h-11 w-11 items-center justify-center rounded-[13px]"
+                      style={{ background: step.iconColor, color: step.iconText }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h3
+                      className="mb-2 text-[17px] font-bold text-white"
+                      style={{ fontFamily: "'Syne',sans-serif" }}
+                    >
+                      {step.title}
+                    </h3>
+                    <p className="mb-4 text-[13px] leading-relaxed text-white/45">{step.desc}</p>
+                    <span className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-semibold ${step.tagStyle}`}>
+                      {step.tag}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <p>&copy; {new Date().getFullYear()} AI Client Closing Agent. All rights reserved.</p>
-        </div>
-      </footer>
-    </div>
+        </section>
+
+        {/* ── Features ── */}
+        <section id="features" className="px-4 pb-24 sm:px-6">
+          <div className="mx-auto max-w-6xl">
+            <div className="draftly-reveal mb-3 flex items-center gap-3">
+              <span className="h-px w-6 bg-violet-500/60" />
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-violet-400">
+                Built for service businesses
+              </p>
+            </div>
+            <h2
+              className="draftly-reveal mb-14 max-w-2xl text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl"
+              style={{ fontFamily: "'Syne',sans-serif" }}
+            >
+              Everything your business needs to close clients.
+            </h2>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              {FEATURE_CARDS.map((card, i) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.name}
+                    className={`draftly-reveal group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] p-7 transition hover:-translate-y-1 hover:border-violet-400/25 ${
+                      i === 0 ? "draftly-reveal" : `draftly-reveal draftly-reveal-d${Math.min(i, 3) as 1 | 2 | 3}`
+                    }`}
+                  >
+                    {/* hover glow */}
+                    <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-violet-500/[0.06] opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+                    <div
+                      className="mb-5 flex h-12 w-12 items-center justify-center rounded-[14px]"
+                      style={{ background: card.iconBg, color: card.iconColor }}
+                    >
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <h3
+                      className="mb-3 text-xl font-bold text-white"
+                      style={{ fontFamily: "'Syne',sans-serif" }}
+                    >
+                      {card.name}
+                    </h3>
+                    <p className="text-[14px] leading-relaxed text-white/45">{card.text}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Channels ── */}
+        <section
+          className="px-4 py-24 sm:px-6"
+          style={{
+            background: "linear-gradient(180deg,transparent 0%,rgba(124,58,237,0.04) 45%,transparent 100%)",
+          }}
+        >
+          <div className="mx-auto max-w-6xl text-center">
+            <div className="draftly-reveal mb-3 flex items-center justify-center gap-3">
+              <span className="h-px w-6 bg-violet-500/60" />
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-violet-400">
+                Channels
+              </p>
+              <span className="h-px w-6 bg-violet-500/60" />
+            </div>
+            <h2
+              className="draftly-reveal mx-auto mb-5 max-w-xl text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl"
+              style={{ fontFamily: "'Syne',sans-serif" }}
+            >
+              Every channel your customers already use.
+            </h2>
+            <p className="draftly-reveal draftly-reveal-d1 mx-auto mb-12 max-w-lg text-lg leading-relaxed text-white/50">
+              Your AI receptionist meets prospects where they are — no new apps required on their end.
+            </p>
+            <div className="draftly-reveal draftly-reveal-d2 flex flex-wrap justify-center gap-3">
+              {CHANNELS.map((ch) => (
+                <div
+                  key={ch.label}
+                  className="flex items-center gap-2.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white/65 backdrop-blur-sm transition hover:-translate-y-1 hover:border-white/[0.15] hover:text-white"
+                >
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ background: ch.dot, boxShadow: `0 0 8px ${ch.dot}80` }}
+                  />
+                  {ch.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Inbox preview ── */}
+        <section id="inbox" className="px-4 pb-24 sm:px-6">
+          <div className="mx-auto max-w-6xl">
+            <div className="draftly-reveal mb-3 flex items-center gap-3">
+              <span className="h-px w-6 bg-violet-500/60" />
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-violet-400">
+                Unified inbox
+              </p>
+            </div>
+            <h2
+              className="draftly-reveal mb-4 max-w-xl text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl"
+              style={{ fontFamily: "'Syne',sans-serif" }}
+            >
+              Every conversation. One command centre.
+            </h2>
+            <p className="draftly-reveal draftly-reveal-d1 mb-12 max-w-lg text-lg leading-relaxed text-white/50">
+              Watch your AI handle the full conversation — then step in manually whenever you want.
+              Full message history, lead context, and actions in one panel.
+            </p>
+            <div className="draftly-reveal draftly-reveal-d2">
+              <InboxPreview />
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section className="relative px-4 py-28 text-center sm:px-6">
+          {/* ambient glow */}
+          <div
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              width: 600,
+              height: 600,
+              background: "radial-gradient(circle,rgba(124,58,237,0.14) 0%,transparent 68%)",
+            }}
+          />
+          <div className="relative">
+            <div className="draftly-reveal mb-6 flex justify-center">
+              <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/35 bg-violet-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.09em] text-violet-300">
+                <span
+                  className="h-1.5 w-1.5 rounded-full bg-emerald-400"
+                  style={{ animation: "draftly-pulse-dot 1.5s ease-in-out infinite", boxShadow: "0 0 8px rgba(52,211,153,0.9)" }}
+                />
+                Real MVP — production data only
+              </span>
+            </div>
+            <h2
+              className="draftly-reveal mx-auto mb-4 max-w-3xl text-5xl font-black leading-[0.96] tracking-tight text-white sm:text-7xl"
+              style={{ fontFamily: "'Syne',sans-serif" }}
+            >
+              Stop missing leads.{" "}
+              <span
+                style={{
+                  background: "linear-gradient(135deg,#a78bfa,#f472b6,#38bdf8)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                Start closing them.
+              </span>
+            </h2>
+            <p
+              className="draftly-reveal draftly-reveal-d1 mx-auto mb-10 text-2xl text-white/35"
+              style={{ fontFamily: "'DM Serif Display',Georgia,serif", fontStyle: "italic" }}
+            >
+              Your AI receptionist is ready to go live.
+            </p>
+            <div className="draftly-reveal draftly-reveal-d2 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              <Link
+                href="/sign-up"
+                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 px-10 py-5 text-base font-bold text-white shadow-[0_16px_48px_rgba(124,58,237,0.42)] transition hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(124,58,237,0.58)]"
+                style={{ fontFamily: "'Syne',sans-serif" }}
+              >
+                Create your workspace <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/sign-in"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-8 py-5 text-base font-semibold text-white backdrop-blur-sm transition hover:bg-white/[0.1]"
+              >
+                <Inbox className="h-4 w-4" /> Owner login
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Footer ── */}
+        <footer className="border-t border-white/[0.06] px-4 py-10 sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-gradient-to-br from-violet-600 to-pink-500">
+                <Sparkles className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span
+                className="text-[15px] font-bold text-white/50"
+                style={{ fontFamily: "'Syne',sans-serif" }}
+              >
+                AI Client Closing Agent
+              </span>
+            </div>
+            <nav className="flex gap-6">
+              {[
+                { label: "Sign in", href: "/sign-in" },
+                { label: "Get started", href: "/sign-up" },
+                { label: "How it works", href: "#workflow" },
+                { label: "Inbox", href: "#inbox" },
+              ].map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-[13px] text-white/30 transition hover:text-white/65"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+            <p className="text-[12px] text-white/20">
+              AI client closing system · Supabase + Gemini
+            </p>
+          </div>
+        </footer>
+      </main>
+    </PremiumMotionBackground>
   );
 }

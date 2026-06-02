@@ -11,11 +11,9 @@ import {
   ArrowRight,
   ArrowLeft,
   DollarSign,
-  Clock,
-  MessageSquarePlus,
-  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { saveAgentConfigOnboarding, saveBusinessFAQ, saveBusinessProfile, saveBusinessServices } from "@/actions/onboarding";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -29,21 +27,63 @@ export default function OnboardingPage() {
   const [location, setLocation] = useState("");
   const [serviceName, setServiceName] = useState("");
   const [servicePrice, setServicePrice] = useState("");
-  const [agentName, setAgentName] = useState("AI assistant name");
+  const [serviceDescription, setServiceDescription] = useState("");
+  const [agentName, setAgentName] = useState("Booking Assistant");
   const [tone, setTone] = useState("professional");
+  const [customInstructions, setCustomInstructions] = useState("");
   const [faqQuestion, setFaqQuestion] = useState("");
   const [faqAnswer, setFaqAnswer] = useState("");
+  const [error, setError] = useState("");
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    setError("");
+
+    if (!businessName.trim()) {
+      setError("Business name is required.");
+      setStep(1);
+      return;
+    }
+
+    if (!serviceName.trim()) {
+      setError("Add at least one service before launching.");
+      setStep(2);
+      return;
+    }
+
     setLoading(true);
-    // Simulate API saving Profile, Services, FAQs, and Agent configuration
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const profile = new FormData();
+      profile.set("businessName", businessName.trim());
+      profile.set("niche", niche);
+      profile.set("websiteUrl", websiteUrl.trim());
+      profile.set("location", location.trim());
+
+      await saveBusinessProfile(profile);
+      await saveBusinessServices({
+        name: serviceName.trim(),
+        price: servicePrice.trim(),
+        description: serviceDescription.trim(),
+      });
+      await saveAgentConfigOnboarding({
+        name: agentName.trim() || "Booking Assistant",
+        tone,
+        customInstructions: customInstructions.trim(),
+      });
+
+      if (faqQuestion.trim() && faqAnswer.trim()) {
+        await saveBusinessFAQ({ question: faqQuestion.trim(), answer: faqAnswer.trim() });
+      }
+
       router.push("/dashboard");
-    }, 1500);
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Setup could not be saved.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const stepIndicators = [
@@ -197,6 +237,8 @@ export default function OnboardingPage() {
                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Service Description</label>
                 <textarea
                   rows={3}
+                  value={serviceDescription}
+                  onChange={(e) => setServiceDescription(e.target.value)}
                   placeholder="Describe what the service includes."
                   className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm resize-none"
                 />
@@ -240,6 +282,8 @@ export default function OnboardingPage() {
                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Custom Agent Instructions (Optional)</label>
                 <textarea
                   rows={3}
+                  value={customInstructions}
+                  onChange={(e) => setCustomInstructions(e.target.value)}
                   placeholder="Add real rules for how the AI should qualify and reply."
                   className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm resize-none"
                 />
@@ -284,6 +328,11 @@ export default function OnboardingPage() {
         )}
 
         {/* CONTROLS AREA */}
+        {error && (
+          <div className="mt-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-200">
+            {error}
+          </div>
+        )}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
           <button
             onClick={prevStep}

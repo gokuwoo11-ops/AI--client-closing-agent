@@ -40,6 +40,9 @@ export type FunnelOptionMinAggregateOutputType = {
   title: string | null
   answer: string | null
   serviceName: string | null
+  parentOptionId: string | null
+  nextPageId: string | null
+  finalAction: string | null
   sortOrder: number | null
   isActive: boolean | null
   createdAt: Date | null
@@ -52,6 +55,9 @@ export type FunnelOptionMaxAggregateOutputType = {
   title: string | null
   answer: string | null
   serviceName: string | null
+  parentOptionId: string | null
+  nextPageId: string | null
+  finalAction: string | null
   sortOrder: number | null
   isActive: boolean | null
   createdAt: Date | null
@@ -64,6 +70,9 @@ export type FunnelOptionCountAggregateOutputType = {
   title: number
   answer: number
   serviceName: number
+  parentOptionId: number
+  nextPageId: number
+  finalAction: number
   sortOrder: number
   isActive: number
   createdAt: number
@@ -86,6 +95,9 @@ export type FunnelOptionMinAggregateInputType = {
   title?: true
   answer?: true
   serviceName?: true
+  parentOptionId?: true
+  nextPageId?: true
+  finalAction?: true
   sortOrder?: true
   isActive?: true
   createdAt?: true
@@ -98,6 +110,9 @@ export type FunnelOptionMaxAggregateInputType = {
   title?: true
   answer?: true
   serviceName?: true
+  parentOptionId?: true
+  nextPageId?: true
+  finalAction?: true
   sortOrder?: true
   isActive?: true
   createdAt?: true
@@ -110,6 +125,9 @@ export type FunnelOptionCountAggregateInputType = {
   title?: true
   answer?: true
   serviceName?: true
+  parentOptionId?: true
+  nextPageId?: true
+  finalAction?: true
   sortOrder?: true
   isActive?: true
   createdAt?: true
@@ -209,6 +227,9 @@ export type FunnelOptionGroupByOutputType = {
   title: string
   answer: string
   serviceName: string | null
+  parentOptionId: string | null
+  nextPageId: string | null
+  finalAction: string
   sortOrder: number
   isActive: boolean
   createdAt: Date
@@ -244,6 +265,9 @@ export type FunnelOptionWhereInput = {
   title?: Prisma.StringFilter<"FunnelOption"> | string
   answer?: Prisma.StringFilter<"FunnelOption"> | string
   serviceName?: Prisma.StringNullableFilter<"FunnelOption"> | string | null
+  parentOptionId?: Prisma.StringNullableFilter<"FunnelOption"> | string | null
+  nextPageId?: Prisma.StringNullableFilter<"FunnelOption"> | string | null
+  finalAction?: Prisma.StringFilter<"FunnelOption"> | string
   sortOrder?: Prisma.IntFilter<"FunnelOption"> | number
   isActive?: Prisma.BoolFilter<"FunnelOption"> | boolean
   createdAt?: Prisma.DateTimeFilter<"FunnelOption"> | Date | string
@@ -257,6 +281,9 @@ export type FunnelOptionOrderByWithRelationInput = {
   title?: Prisma.SortOrder
   answer?: Prisma.SortOrder
   serviceName?: Prisma.SortOrderInput | Prisma.SortOrder
+  parentOptionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  nextPageId?: Prisma.SortOrderInput | Prisma.SortOrder
+  finalAction?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -273,6 +300,9 @@ export type FunnelOptionWhereUniqueInput = Prisma.AtLeast<{
   title?: Prisma.StringFilter<"FunnelOption"> | string
   answer?: Prisma.StringFilter<"FunnelOption"> | string
   serviceName?: Prisma.StringNullableFilter<"FunnelOption"> | string | null
+  parentOptionId?: Prisma.StringNullableFilter<"FunnelOption"> | string | null
+  nextPageId?: Prisma.StringNullableFilter<"FunnelOption"> | string | null
+  finalAction?: Prisma.StringFilter<"FunnelOption"> | string
   sortOrder?: Prisma.IntFilter<"FunnelOption"> | number
   isActive?: Prisma.BoolFilter<"FunnelOption"> | boolean
   createdAt?: Prisma.DateTimeFilter<"FunnelOption"> | Date | string
@@ -286,6 +316,9 @@ export type FunnelOptionOrderByWithAggregationInput = {
   title?: Prisma.SortOrder
   answer?: Prisma.SortOrder
   serviceName?: Prisma.SortOrderInput | Prisma.SortOrder
+  parentOptionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  nextPageId?: Prisma.SortOrderInput | Prisma.SortOrder
+  finalAction?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -306,6 +339,9 @@ export type FunnelOptionScalarWhereWithAggregatesInput = {
   title?: Prisma.StringWithAggregatesFilter<"FunnelOption"> | string
   answer?: Prisma.StringWithAggregatesFilter<"FunnelOption"> | string
   serviceName?: Prisma.StringNullableWithAggregatesFilter<"FunnelOption"> | string | null
+  parentOptionId?: Prisma.StringNullableWithAggregatesFilter<"FunnelOption"> | string | null
+  nextPageId?: Prisma.StringNullableWithAggregatesFilter<"FunnelOption"> | string | null
+  finalAction?: Prisma.StringWithAggregatesFilter<"FunnelOption"> | string
   sortOrder?: Prisma.IntWithAggregatesFilter<"FunnelOption"> | number
   isActive?: Prisma.BoolWithAggregatesFilter<"FunnelOption"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"FunnelOption"> | Date | string
@@ -317,6 +353,9 @@ export type FunnelOptionCreateInput = {
   title: string
   answer: string
   serviceName?: string | null
+  parentOptionId?: string | null
+  nextPageId?: string | null
+  finalAction?: string
   sortOrder?: number
   isActive?: boolean
   createdAt?: Date | string
@@ -330,6 +369,9 @@ export type FunnelOptionUncheckedCreateInput = {
   title: string
   answer: string
   serviceName?: string | null
+  parentOptionId?: string | null
+  nextPageId?: string | null
+  finalAction?: string
   sortOrder?: number
   isActive?: boolean
   createdAt?: Date | string
@@ -341,6 +383,9 @@ export type FunnelOptionUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   answer?: Prisma.StringFieldUpdateOperationsInput | string
   serviceName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextPageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  finalAction?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -354,6 +399,9 @@ export type FunnelOptionUncheckedUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   answer?: Prisma.StringFieldUpdateOperationsInput | string
   serviceName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextPageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  finalAction?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -366,6 +414,9 @@ export type FunnelOptionCreateManyInput = {
   title: string
   answer: string
   serviceName?: string | null
+  parentOptionId?: string | null
+  nextPageId?: string | null
+  finalAction?: string
   sortOrder?: number
   isActive?: boolean
   createdAt?: Date | string
@@ -377,6 +428,9 @@ export type FunnelOptionUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   answer?: Prisma.StringFieldUpdateOperationsInput | string
   serviceName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextPageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  finalAction?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -389,6 +443,9 @@ export type FunnelOptionUncheckedUpdateManyInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   answer?: Prisma.StringFieldUpdateOperationsInput | string
   serviceName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextPageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  finalAction?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -411,6 +468,9 @@ export type FunnelOptionCountOrderByAggregateInput = {
   title?: Prisma.SortOrder
   answer?: Prisma.SortOrder
   serviceName?: Prisma.SortOrder
+  parentOptionId?: Prisma.SortOrder
+  nextPageId?: Prisma.SortOrder
+  finalAction?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -427,6 +487,9 @@ export type FunnelOptionMaxOrderByAggregateInput = {
   title?: Prisma.SortOrder
   answer?: Prisma.SortOrder
   serviceName?: Prisma.SortOrder
+  parentOptionId?: Prisma.SortOrder
+  nextPageId?: Prisma.SortOrder
+  finalAction?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -439,6 +502,9 @@ export type FunnelOptionMinOrderByAggregateInput = {
   title?: Prisma.SortOrder
   answer?: Prisma.SortOrder
   serviceName?: Prisma.SortOrder
+  parentOptionId?: Prisma.SortOrder
+  nextPageId?: Prisma.SortOrder
+  finalAction?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -496,6 +562,9 @@ export type FunnelOptionCreateWithoutPageInput = {
   title: string
   answer: string
   serviceName?: string | null
+  parentOptionId?: string | null
+  nextPageId?: string | null
+  finalAction?: string
   sortOrder?: number
   isActive?: boolean
   createdAt?: Date | string
@@ -507,6 +576,9 @@ export type FunnelOptionUncheckedCreateWithoutPageInput = {
   title: string
   answer: string
   serviceName?: string | null
+  parentOptionId?: string | null
+  nextPageId?: string | null
+  finalAction?: string
   sortOrder?: number
   isActive?: boolean
   createdAt?: Date | string
@@ -548,6 +620,9 @@ export type FunnelOptionScalarWhereInput = {
   title?: Prisma.StringFilter<"FunnelOption"> | string
   answer?: Prisma.StringFilter<"FunnelOption"> | string
   serviceName?: Prisma.StringNullableFilter<"FunnelOption"> | string | null
+  parentOptionId?: Prisma.StringNullableFilter<"FunnelOption"> | string | null
+  nextPageId?: Prisma.StringNullableFilter<"FunnelOption"> | string | null
+  finalAction?: Prisma.StringFilter<"FunnelOption"> | string
   sortOrder?: Prisma.IntFilter<"FunnelOption"> | number
   isActive?: Prisma.BoolFilter<"FunnelOption"> | boolean
   createdAt?: Prisma.DateTimeFilter<"FunnelOption"> | Date | string
@@ -559,6 +634,9 @@ export type FunnelOptionCreateManyPageInput = {
   title: string
   answer: string
   serviceName?: string | null
+  parentOptionId?: string | null
+  nextPageId?: string | null
+  finalAction?: string
   sortOrder?: number
   isActive?: boolean
   createdAt?: Date | string
@@ -570,6 +648,9 @@ export type FunnelOptionUpdateWithoutPageInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   answer?: Prisma.StringFieldUpdateOperationsInput | string
   serviceName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextPageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  finalAction?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -581,6 +662,9 @@ export type FunnelOptionUncheckedUpdateWithoutPageInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   answer?: Prisma.StringFieldUpdateOperationsInput | string
   serviceName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextPageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  finalAction?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -592,6 +676,9 @@ export type FunnelOptionUncheckedUpdateManyWithoutPageInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   answer?: Prisma.StringFieldUpdateOperationsInput | string
   serviceName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentOptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextPageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  finalAction?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -606,6 +693,9 @@ export type FunnelOptionSelect<ExtArgs extends runtime.Types.Extensions.Internal
   title?: boolean
   answer?: boolean
   serviceName?: boolean
+  parentOptionId?: boolean
+  nextPageId?: boolean
+  finalAction?: boolean
   sortOrder?: boolean
   isActive?: boolean
   createdAt?: boolean
@@ -619,6 +709,9 @@ export type FunnelOptionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   title?: boolean
   answer?: boolean
   serviceName?: boolean
+  parentOptionId?: boolean
+  nextPageId?: boolean
+  finalAction?: boolean
   sortOrder?: boolean
   isActive?: boolean
   createdAt?: boolean
@@ -632,6 +725,9 @@ export type FunnelOptionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   title?: boolean
   answer?: boolean
   serviceName?: boolean
+  parentOptionId?: boolean
+  nextPageId?: boolean
+  finalAction?: boolean
   sortOrder?: boolean
   isActive?: boolean
   createdAt?: boolean
@@ -645,13 +741,16 @@ export type FunnelOptionSelectScalar = {
   title?: boolean
   answer?: boolean
   serviceName?: boolean
+  parentOptionId?: boolean
+  nextPageId?: boolean
+  finalAction?: boolean
   sortOrder?: boolean
   isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type FunnelOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "pageId" | "title" | "answer" | "serviceName" | "sortOrder" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["funnelOption"]>
+export type FunnelOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "pageId" | "title" | "answer" | "serviceName" | "parentOptionId" | "nextPageId" | "finalAction" | "sortOrder" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["funnelOption"]>
 export type FunnelOptionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   page?: boolean | Prisma.FunnelOptionPageDefaultArgs<ExtArgs>
 }
@@ -673,6 +772,9 @@ export type $FunnelOptionPayload<ExtArgs extends runtime.Types.Extensions.Intern
     title: string
     answer: string
     serviceName: string | null
+    parentOptionId: string | null
+    nextPageId: string | null
+    finalAction: string
     sortOrder: number
     isActive: boolean
     createdAt: Date
@@ -1106,6 +1208,9 @@ export interface FunnelOptionFieldRefs {
   readonly title: Prisma.FieldRef<"FunnelOption", 'String'>
   readonly answer: Prisma.FieldRef<"FunnelOption", 'String'>
   readonly serviceName: Prisma.FieldRef<"FunnelOption", 'String'>
+  readonly parentOptionId: Prisma.FieldRef<"FunnelOption", 'String'>
+  readonly nextPageId: Prisma.FieldRef<"FunnelOption", 'String'>
+  readonly finalAction: Prisma.FieldRef<"FunnelOption", 'String'>
   readonly sortOrder: Prisma.FieldRef<"FunnelOption", 'Int'>
   readonly isActive: Prisma.FieldRef<"FunnelOption", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"FunnelOption", 'DateTime'>

@@ -1,627 +1,502 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import {
   Bot,
-  Save,
-  Plus,
-  Trash2,
-  BookOpen,
-  DollarSign,
-  HelpCircle,
-  Link as LinkIcon,
   CheckCircle,
+  GitBranch,
+  Layers3,
+  Pencil,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+  X,
 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  saveAgentConfig,
-  saveService,
-  deleteService,
-  saveFAQ,
-  deleteFAQ,
-  getAgentData,
-  saveFunnelOptionPage,
-  deleteFunnelOptionPage,
-  saveFunnelOption,
   deleteFunnelOption,
+  deleteFunnelOptionPage,
+  getAgentData,
+  saveAgentConfig,
+  saveFunnelOption,
+  saveFunnelOptionPage,
 } from "@/actions/agent";
+import { GlassPanel, PremiumMotionBackground, StatusBadge } from "@/components/premium/PremiumMotionBackground";
 
 type FunnelOptionIntent = "ENQUIRY" | "BOOKING" | "BOTH";
-type FunnelOption = { id: string; title: string; answer: string; serviceName?: string };
-type FunnelOptionPage = { id: string; title: string; subtitle?: string; intent: FunnelOptionIntent; options: FunnelOption[] };
+type FinalAction = "GO_TO_NEXT_PAGE" | "ASK_REQUIREMENT" | "SHOW_SLOTS";
+type FunnelOption = {
+  id: string;
+  pageId: string;
+  title: string;
+  answer: string;
+  serviceName?: string | null;
+  parentOptionId?: string | null;
+  nextPageId?: string | null;
+  finalAction?: FinalAction | string | null;
+};
+type FunnelOptionPage = {
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  intent: FunnelOptionIntent;
+  options: FunnelOption[];
+};
+type DraftOption = {
+  title: string;
+  answer: string;
+  serviceName: string;
+  parentOptionId: string;
+  nextPageId: string;
+  finalAction: FinalAction;
+};
+
+const emptyDraft: DraftOption = {
+  title: "",
+  answer: "",
+  serviceName: "",
+  parentOptionId: "",
+  nextPageId: "",
+  finalAction: "ASK_REQUIREMENT",
+};
+
+function niceAction(action?: string | null) {
+  if (action === "GO_TO_NEXT_PAGE") return "Opens next page";
+  if (action === "SHOW_SLOTS") return "Shows slots";
+  return "Asks requirement";
+}
 
 export default function AgentSetupPage() {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   const [agentName, setAgentName] = useState("Booking Assistant");
   const [tone, setTone] = useState("professional");
-  const [bookingLink, setBookingLink] = useState("");
   const [instructions, setInstructions] = useState(
-    "Answer using the saved business services and FAQs. Ask qualification questions one at a time. Only show booking slots after the prospect is qualified.",
+    "Help prospects choose the right option, explain the selected service clearly, collect their requirement, and move them toward a booked appointment.",
   );
   const [fallbackMessage, setFallbackMessage] = useState(
-    "I apologize, but I'm not certain on that. Let me get one of our team members to contact you directly.",
+    "The team will confirm the best details for you.",
   );
 
-  const [faqs, setFaqs] = useState<{ id: string; q: string; a: string }[]>([]);
-  const [newQ, setNewQ] = useState("");
-  const [newA, setNewA] = useState("");
-
-  const [services, setServices] = useState<
-    { id: string; name: string; price: string; desc: string }[]
-  >([]);
-  const [newSName, setNewSName] = useState("");
-  const [newSPrice, setNewSPrice] = useState("");
-  const [newSDesc, setNewSDesc] = useState("");
-
-  const [optionPages, setOptionPages] = useState<FunnelOptionPage[]>([]);
+  const [pages, setPages] = useState<FunnelOptionPage[]>([]);
   const [newPageTitle, setNewPageTitle] = useState("");
   const [newPageSubtitle, setNewPageSubtitle] = useState("");
   const [newPageIntent, setNewPageIntent] = useState<FunnelOptionIntent>("BOTH");
-  const [newOptionByPage, setNewOptionByPage] = useState<Record<string, { title: string; answer: string; serviceName: string }>>({});
+  const [draftByPage, setDraftByPage] = useState<Record<string, DraftOption>>({});
+  const [editingOptionByPage, setEditingOptionByPage] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    async function loadAgentData() {
-      try {
-        const data = await getAgentData();
-        if (data.agentConfig) {
+    let alive = true;
+    setLoading(true);
+    getAgentData()
+      .then((data: any) => {
+        if (!alive) return;
+        if (data?.agentConfig) {
           setAgentName(data.agentConfig.name || "Booking Assistant");
           setTone(data.agentConfig.tone || "professional");
-          setBookingLink(data.agentConfig.bookingLink || "");
-          setInstructions(
-            data.agentConfig.customInstructions ||
-              "Answer using the saved business services and FAQs. Ask qualification questions one at a time. Only show booking slots after the prospect is qualified.",
-          );
-          setFallbackMessage(
-            data.agentConfig.fallbackMessage ||
-              "I am not certain on that. The team can confirm this for you.",
-          );
+          setInstructions(data.agentConfig.customInstructions || instructions);
+          setFallbackMessage(data.agentConfig.fallbackMessage || fallbackMessage);
         }
-        if (data.businessProfile?.faqs) {
-          setFaqs(
-            data.businessProfile.faqs.map((faq: any) => ({
-              id: faq.id,
-              q: faq.question,
-              a: faq.answer,
+        setPages(
+          (data?.funnelOptionPages || []).map((page: any) => ({
+            id: page.id,
+            title: page.title,
+            subtitle: page.subtitle || "",
+            intent: page.intent || "BOTH",
+            options: (page.options || []).map((option: any) => ({
+              id: option.id,
+              pageId: option.pageId || page.id,
+              title: option.title,
+              answer: option.answer || "",
+              serviceName: option.serviceName || "",
+              parentOptionId: option.parentOptionId || "",
+              nextPageId: option.nextPageId || "",
+              finalAction: option.finalAction || (option.nextPageId ? "GO_TO_NEXT_PAGE" : "ASK_REQUIREMENT"),
             })),
-          );
-        }
-        if (data.businessProfile?.services) {
-          setServices(
-            data.businessProfile.services.map((service: any) => ({
-              id: service.id,
-              name: service.name,
-              price: service.price || "",
-              desc: service.description || "",
-            })),
-          );
-        }
-        if (data.funnelOptionPages) {
-          setOptionPages(
-            data.funnelOptionPages.map((page: any) => ({
-              id: page.id,
-              title: page.title,
-              subtitle: page.subtitle || "",
-              intent: page.intent || "BOTH",
-              options: (page.options || []).map((option: any) => ({
-                id: option.id,
-                title: option.title,
-                answer: option.answer,
-                serviceName: option.serviceName || "",
-              })),
-            })),
-          );
-        }
-      } catch (err) {
-        console.error("Could not load agent data:", err);
-      }
-    }
-
-    loadAgentData();
+          })),
+        );
+      })
+      .catch((caught) => setError(caught instanceof Error ? caught.message : "Could not load AI receptionist."))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAddFaq = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newQ || !newA) return;
-    setError("");
-    try {
-      const result = await saveFAQ({ question: newQ, answer: newA });
-      const saved = (result as any).faq;
-      setFaqs([
-        ...faqs,
-        { id: saved?.id || crypto.randomUUID(), q: newQ, a: newA },
-      ]);
-      setNewQ("");
-      setNewA("");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save FAQ.";
-      setError(message);
-      console.error("FAQ save failed:", err);
-    }
-  };
+  const allOptions = useMemo(
+    () => pages.flatMap((page) => page.options.map((option) => ({ ...option, pageTitle: page.title }))),
+    [pages],
+  );
 
-  const handleRemoveFaq = async (id: string) => {
-    setFaqs(faqs.filter((f) => f.id !== id));
-    await deleteFAQ(id);
-  };
+  const rootPages = pages.filter((page) => page.options.some((option) => !option.parentOptionId));
 
-  const handleAddService = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSName) return;
-    setError("");
-    try {
-      const result = await saveService({
-        name: newSName,
-        price: newSPrice || "Custom",
-        description: newSDesc,
-      });
-      const saved = (result as any).service;
-      const svc = {
-        id: saved?.id || crypto.randomUUID(),
-        name: newSName,
-        price: newSPrice || "Custom",
-        desc: newSDesc,
+  function draft(pageId: string) {
+    return draftByPage[pageId] || emptyDraft;
+  }
+
+  function updateDraft(pageId: string, key: keyof DraftOption, value: string) {
+    setDraftByPage((prev) => {
+      const current: DraftOption = prev[pageId] || emptyDraft;
+      return {
+        ...prev,
+        [pageId]: { ...current, [key]: value } as DraftOption,
       };
-      setServices([...services, svc]);
-      setNewSName("");
-      setNewSPrice("");
-      setNewSDesc("");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save service.";
-      setError(message);
-      console.error("Service save failed:", err);
-    }
-  };
+    });
+  }
 
-  const handleRemoveService = async (id: string) => {
-    setServices(services.filter((s) => s.id !== id));
-    await deleteService(id);
-  };
-
-  const handleAddOptionPage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function addPage(event: React.FormEvent) {
+    event.preventDefault();
     if (!newPageTitle.trim()) return;
     setError("");
     try {
-      const result = await saveFunnelOptionPage({ title: newPageTitle, subtitle: newPageSubtitle, intent: newPageIntent });
-      const saved = (result as any).page;
-      setOptionPages([...optionPages, { id: saved.id, title: saved.title, subtitle: saved.subtitle || "", intent: saved.intent || "BOTH", options: [] }]);
+      const result = await saveFunnelOptionPage({ title: newPageTitle.trim(), subtitle: newPageSubtitle.trim(), intent: newPageIntent });
+      const page = (result as any).page;
+      setPages((prev) => [...prev, { id: page.id, title: page.title, subtitle: page.subtitle || "", intent: page.intent || "BOTH", options: [] }]);
       setNewPageTitle("");
       setNewPageSubtitle("");
       setNewPageIntent("BOTH");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save option page.";
-      setError(message);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not add option page.");
     }
-  };
+  }
 
-  const handleRemoveOptionPage = async (id: string) => {
-    setOptionPages(optionPages.filter((page) => page.id !== id));
-    await deleteFunnelOptionPage(id);
-  };
+  async function removePage(pageId: string) {
+    setPages((prev) => prev.filter((page) => page.id !== pageId));
+    await deleteFunnelOptionPage(pageId).catch(() => null);
+  }
 
-  const updateDraftOption = (pageId: string, key: "title" | "answer" | "serviceName", value: string) => {
-    setNewOptionByPage((prev) => {
-      const current = prev[pageId] || { title: "", answer: "", serviceName: "" };
-      return {
-        ...prev,
-        [pageId]: { ...current, [key]: value },
-      };
+  function startEditOption(pageId: string, option: FunnelOption) {
+    setEditingOptionByPage((prev) => ({ ...prev, [pageId]: option.id }));
+    setDraftByPage((prev) => ({
+      ...prev,
+      [pageId]: {
+        title: option.title || "",
+        answer: option.answer || "",
+        serviceName: option.serviceName || "",
+        parentOptionId: option.parentOptionId || "",
+        nextPageId: option.nextPageId || "",
+        finalAction:
+          (option.finalAction as FinalAction) ||
+          (option.nextPageId ? "GO_TO_NEXT_PAGE" : "ASK_REQUIREMENT"),
+      },
+    }));
+  }
+
+  function cancelEditOption(pageId: string) {
+    setEditingOptionByPage((prev) => {
+      const next = { ...prev };
+      delete next[pageId];
+      return next;
     });
-  };
+    setDraftByPage((prev) => ({ ...prev, [pageId]: emptyDraft }));
+  }
 
-  const handleAddOption = async (pageId: string) => {
-    const draft = newOptionByPage[pageId] || { title: "", answer: "", serviceName: "" };
-    if (!draft.title.trim() || !draft.answer.trim()) return;
+  async function saveOption(pageId: string) {
+    const item = draft(pageId);
+    const editingOptionId = editingOptionByPage[pageId] || "";
+    if (!item.title.trim() || !item.answer.trim()) return;
+
     setError("");
     try {
-      const result = await saveFunnelOption({ pageId, title: draft.title, answer: draft.answer, serviceName: draft.serviceName });
-      const saved = (result as any).option;
-      setOptionPages(optionPages.map((page) => page.id === pageId
-        ? { ...page, options: [...page.options, { id: saved.id, title: saved.title, answer: saved.answer, serviceName: saved.serviceName || "" }] }
-        : page,
-      ));
-      setNewOptionByPage((prev) => ({ ...prev, [pageId]: { title: "", answer: "", serviceName: "" } }));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save option.";
-      setError(message);
-    }
-  };
-
-  const handleRemoveOption = async (pageId: string, optionId: string) => {
-    setOptionPages(optionPages.map((page) => page.id === pageId
-      ? { ...page, options: page.options.filter((option) => option.id !== optionId) }
-      : page,
-    ));
-    await deleteFunnelOption(optionId);
-  };
-
-  const handleSave = async () => {
-    setLoading(true);
-    setSuccess(false);
-    setError("");
-    try {
-      await saveAgentConfig({
-        name: agentName,
-        tone,
-        bookingLink,
-        customInstructions: instructions,
-        fallbackMessage,
+      const result = await saveFunnelOption({
+        id: editingOptionId || undefined,
+        pageId,
+        title: item.title.trim(),
+        answer: item.answer.trim(),
+        serviceName: item.serviceName.trim(),
+        parentOptionId: item.parentOptionId || null,
+        nextPageId: item.nextPageId || null,
+        finalAction: item.nextPageId
+          ? "GO_TO_NEXT_PAGE"
+          : item.finalAction === "GO_TO_NEXT_PAGE"
+            ? "ASK_REQUIREMENT"
+            : item.finalAction,
       });
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2500);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Save failed.";
-      setError(message);
-      console.error("Save failed:", err);
-    } finally {
-      setLoading(false);
+      const option = (result as any).option;
+      const savedOption = {
+        id: option.id,
+        pageId,
+        title: option.title,
+        answer: option.answer,
+        serviceName: option.serviceName || "",
+        parentOptionId: option.parentOptionId || "",
+        nextPageId: option.nextPageId || "",
+        finalAction: option.finalAction || item.finalAction,
+      };
+
+      setPages((prev) =>
+        prev.map((page) => {
+          if (page.id !== pageId) return page;
+
+          return {
+            ...page,
+            options: editingOptionId
+              ? page.options.map((existing) =>
+                  existing.id === editingOptionId ? savedOption : existing,
+                )
+              : [...page.options, savedOption],
+          };
+        }),
+      );
+      cancelEditOption(pageId);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : editingOptionId
+            ? "Could not update option."
+            : "Could not add option.",
+      );
     }
-  };
+  }
+
+  async function removeOption(pageId: string, optionId: string) {
+    if (editingOptionByPage[pageId] === optionId) {
+      cancelEditOption(pageId);
+    }
+    setPages((prev) => prev.map((page) => page.id === pageId ? { ...page, options: page.options.filter((option) => option.id !== optionId) } : page));
+    await deleteFunnelOption(optionId).catch(() => null);
+  }
+
+  async function saveProfile() {
+    setSaving(true);
+    setSaved(false);
+    setError("");
+    try {
+      await saveAgentConfig({ name: agentName, tone, customInstructions: instructions, fallbackMessage });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2400);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not save receptionist settings.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between pb-6 border-b border-white/5">
-        <div>
-          <h1 className="text-2xl font-extrabold text-white flex items-center gap-2.5">
-            <Bot className="h-7 w-7 text-indigo-400" />
-            AI Agent Configuration
-          </h1>
-          <p className="text-xs text-gray-400 mt-1">
-            Add the real services, prices, FAQs, and rules the public booking
-            assistant should use.
-          </p>
+    <PremiumMotionBackground variant="owner">
+      <main className="mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden px-4 py-7 sm:px-6 lg:px-8">
+        <div className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="signature-font text-3xl text-amber-200/90">Receptionist Flow</p>
+            <h1 className="mt-1 text-4xl font-black tracking-tight text-white">AI Receptionist</h1>
+            <p className="mt-2 max-w-3xl text-sm font-medium leading-7 text-white/48">
+              Build the exact path your prospects follow: main option, related sub-options, requirement capture, then booking.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={saveProfile}
+            disabled={saving}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-500 px-5 py-3 text-sm font-black text-white shadow-[0_18px_50px_rgba(99,102,241,.28)] transition hover:-translate-y-0.5 disabled:opacity-50"
+          >
+            {saving ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : saved ? <CheckCircle className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+            {saved ? "Saved" : "Save receptionist"}
+          </button>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-md shadow-indigo-500/10 active:translate-y-0.5 disabled:opacity-70"
-        >
-          {loading ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-          ) : success ? (
-            <>
-              <CheckCircle className="h-4 w-4 text-white" /> Saved!
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 text-white" /> Save Configuration
-            </>
-          )}
-        </button>
-      </div>
 
-      {error ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
-          {error}
-        </div>
-      ) : null}
+        {error ? <div className="mb-5 rounded-2xl border border-red-400/25 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-100">{error}</div> : null}
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          {/* CORE PARAMS */}
-          <div className="glassmorphism rounded-xl border border-white/5 p-6 shadow-xl space-y-5">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Bot className="h-4 w-4 text-indigo-400" /> Agent Profile &
-              Instructions
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Agent Display Name
-                </label>
-                <input
-                  type="text"
-                  value={agentName}
-                  onChange={(e) => setAgentName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
-                />
+        <GlassPanel className="mb-6 min-w-0 p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[.18em] text-cyan-100">
+                <GitBranch className="h-3.5 w-3.5" /> Flow options are live
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Agent Dialogue Tone
-                </label>
-                <select
-                  value={tone}
-                  onChange={(e) => setTone(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-[#090d16] border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
-                >
-                  <option value="professional">Professional & Technical</option>
-                  <option value="casual">Casual & Friendly</option>
-                  <option value="luxury">Luxury & Direct</option>
-                  <option value="direct">Direct & Persuasive</option>
-                </select>
-              </div>
+              <h2 className="text-2xl font-black text-white">Create option chains like: Website → New website → Book slot</h2>
+              <p className="mt-2 max-w-4xl text-sm font-semibold leading-7 text-white/48">
+                Add a main option with <span className="text-white">No parent</span>. Then add the next option and choose <span className="text-white">After: main option</span>. The public booking page will show that next option only after the previous one is selected.
+              </p>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Calendly / Booking Link
-              </label>
-              <div className="relative">
-                <LinkIcon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                <input
-                  type="url"
-                  value={bookingLink}
-                  onChange={(e) => setBookingLink(e.target.value)}
-                  placeholder="Real booking link"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                System Prompt Guidelines
-              </label>
-              <textarea
-                rows={4}
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm resize-none"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Fallback / Handoff Message
-              </label>
-              <input
-                type="text"
-                value={fallbackMessage}
-                onChange={(e) => setFallbackMessage(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
-              />
+            <div className="rounded-2xl border border-white/10 bg-black/16 px-4 py-3 text-xs font-bold leading-6 text-white/52">
+              Main option → Child option → Requirement → Slot → Saved lead
             </div>
           </div>
+        </GlassPanel>
 
-
-          {/* OWNER-CONFIGURABLE FUNNEL OPTIONS */}
-          <div className="glassmorphism rounded-xl border border-white/5 p-6 shadow-xl space-y-5">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-indigo-400" /> Booking Page Options
-            </h2>
-            <p className="text-xs text-gray-500 leading-relaxed">
-              Control the option page shown to prospects. Add a page, add options, and write the brief saved answer. When a prospect selects an option, AI rewrites that saved answer into a helpful business response before moving them toward booking.
-            </p>
-
-            <form onSubmit={handleAddOptionPage} className="grid sm:grid-cols-[1fr_1fr_140px_auto] gap-3 border border-white/5 rounded-xl bg-white/[0.02] p-4">
-              <input
-                type="text"
-                placeholder="Option page title, e.g. What do you need help with?"
-                value={newPageTitle}
-                onChange={(e) => setNewPageTitle(e.target.value)}
-                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-              />
-              <input
-                type="text"
-                placeholder="Short subtitle / helper text"
-                value={newPageSubtitle}
-                onChange={(e) => setNewPageSubtitle(e.target.value)}
-                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-              />
-              <select
-                value={newPageIntent}
-                onChange={(e) => setNewPageIntent(e.target.value as FunnelOptionIntent)}
-                className="px-3 py-2 rounded-lg bg-[#090d16] border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-              >
-                <option value="BOTH">Both</option>
-                <option value="BOOKING">Booking</option>
-                <option value="ENQUIRY">Enquiry</option>
-              </select>
-              <button type="submit" className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold">
-                <Plus className="h-3.5 w-3.5" /> Add Page
-              </button>
-            </form>
-
-            <div className="space-y-4">
-              {optionPages.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-xs text-gray-500">
-                  No custom option page yet. If you leave this empty, the public page will use Services and FAQs as fallback options.
+        <div className="grid w-full min-w-0 grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+          <section className="min-w-0 space-y-6">
+            <GlassPanel className="min-w-0 p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-500/14 text-indigo-200"><Bot className="h-5 w-5" /></div>
+                <div>
+                  <h2 className="text-xl font-black text-white">Assistant style</h2>
+                  <p className="text-xs font-semibold text-white/38">Owner-facing controls only</p>
                 </div>
-              ) : null}
-              {optionPages.map((page) => {
-                const draft = newOptionByPage[page.id] || { title: "", answer: "", serviceName: "" };
-                return (
-                  <div key={page.id} className="rounded-xl border border-white/5 bg-white/[0.02] p-4 space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-sm font-bold text-white">{page.title}</p>
-                        <p className="text-[11px] text-gray-500 mt-1">{page.subtitle || "No subtitle"} • {page.intent}</p>
-                      </div>
-                      <button onClick={() => handleRemoveOptionPage(page.id)} className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+              </div>
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="mb-2 block text-[11px] font-black uppercase tracking-[.18em] text-white/35">Display name</span>
+                  <input value={agentName} onChange={(event) => setAgentName(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-white/[.045] px-4 py-3 text-sm font-bold text-white outline-none focus:border-indigo-300/50" />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-[11px] font-black uppercase tracking-[.18em] text-white/35">Tone</span>
+                  <select value={tone} onChange={(event) => setTone(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#090d16] px-4 py-3 text-sm font-bold text-white outline-none focus:border-indigo-300/50">
+                    <option value="professional">Professional</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="premium">Premium and concise</option>
+                    <option value="direct">Direct and confident</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-[11px] font-black uppercase tracking-[.18em] text-white/35">Response rules</span>
+                  <textarea rows={5} value={instructions} onChange={(event) => setInstructions(event.target.value)} className="w-full resize-none rounded-2xl border border-white/10 bg-white/[.045] px-4 py-3 text-sm font-semibold leading-7 text-white outline-none focus:border-indigo-300/50" />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-[11px] font-black uppercase tracking-[.18em] text-white/35">Handoff message</span>
+                  <input value={fallbackMessage} onChange={(event) => setFallbackMessage(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-white/[.045] px-4 py-3 text-sm font-bold text-white outline-none focus:border-indigo-300/50" />
+                </label>
+              </div>
+            </GlassPanel>
 
-                    <div className="space-y-2">
-                      {page.options.map((option) => (
-                        <div key={option.id} className="rounded-lg border border-white/5 bg-black/10 p-3 flex items-start justify-between gap-3">
-                          <div className="text-xs">
-                            <p className="font-bold text-white">{option.title}</p>
-                            <p className="text-gray-400 mt-1 leading-relaxed">{option.answer}</p>
-                            {option.serviceName ? <p className="text-indigo-300 mt-1">Service: {option.serviceName}</p> : null}
-                          </div>
-                          <button onClick={() => handleRemoveOption(page.id, option.id)} className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded shrink-0">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+            <GlassPanel className="min-w-0 p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/12 text-emerald-200"><GitBranch className="h-5 w-5" /></div>
+                <div>
+                  <h2 className="text-xl font-black text-white">Flow preview</h2>
+                  <p className="text-xs font-semibold text-white/38">Main choices and child pages</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {loading ? <p className="text-sm font-bold text-white/45">Please wait...</p> : null}
+                {rootPages.length === 0 && !loading ? <p className="rounded-2xl border border-dashed border-white/12 bg-white/[.025] p-4 text-sm font-semibold leading-7 text-white/42">Create one option page, then add at least one option with No parent. Add child options by choosing After: previous option.</p> : null}
+                {pages.map((page) => (
+                  <div key={page.id} className="min-w-0 rounded-2xl border border-white/10 bg-white/[.035] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black text-white">{page.title}</p>
+                        <p className="mt-1 text-xs font-semibold text-white/35">{page.intent} · {page.options.length} options</p>
+                      </div>
+                      <StatusBadge tone="slate">Page</StatusBadge>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {page.options.slice(0, 4).map((option) => (
+                        <div key={option.id} className="flex items-center justify-between gap-3 rounded-xl bg-black/16 px-3 py-2 text-xs">
+                          <span className="truncate font-bold text-white/66">{option.title}</span>
+                          <span className="shrink-0 text-white/32">{option.parentOptionId ? "after option" : option.nextPageId ? "→ page" : niceAction(option.finalAction)}</span>
                         </div>
                       ))}
                     </div>
+                  </div>
+                ))}
+              </div>
+            </GlassPanel>
+          </section>
 
-                    <div className="grid sm:grid-cols-2 gap-3 border-t border-white/5 pt-4">
-                      <input
-                        type="text"
-                        placeholder="Option label shown to prospect"
-                        value={draft.title}
-                        onChange={(e) => updateDraftOption(page.id, "title", e.target.value)}
-                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Related service name (optional)"
-                        value={draft.serviceName}
-                        onChange={(e) => updateDraftOption(page.id, "serviceName", e.target.value)}
-                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-                      />
-                      <textarea
-                        rows={2}
-                        placeholder="Brief saved answer. AI will use this to reply better when selected."
-                        value={draft.answer}
-                        onChange={(e) => updateDraftOption(page.id, "answer", e.target.value)}
-                        className="sm:col-span-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs resize-none"
-                      />
-                      <button type="button" onClick={() => handleAddOption(page.id)} className="sm:col-span-2 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold">
-                        <Plus className="h-3.5 w-3.5" /> Add Option
+          <section className="min-w-0 space-y-6">
+            <GlassPanel className="min-w-0 p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/14 text-violet-200"><Layers3 className="h-5 w-5" /></div>
+                <div>
+                  <h2 className="text-xl font-black text-white">Option pages</h2>
+                  <p className="text-xs font-semibold text-white/38">Main page, then related sub-option pages</p>
+                </div>
+              </div>
+              <form onSubmit={addPage} className="grid min-w-0 grid-cols-1 gap-3 rounded-3xl border border-white/10 bg-white/[.035] p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_auto]">
+                <input value={newPageTitle} onChange={(event) => setNewPageTitle(event.target.value)} placeholder="Page title" className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-white/22 focus:border-indigo-300/50" />
+                <input value={newPageSubtitle} onChange={(event) => setNewPageSubtitle(event.target.value)} placeholder="Short helper text" className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-white/22 focus:border-indigo-300/50" />
+                <select value={newPageIntent} onChange={(event) => setNewPageIntent(event.target.value as FunnelOptionIntent)} className="rounded-2xl border border-white/10 bg-[#090d16] px-4 py-3 text-sm font-bold text-white outline-none focus:border-indigo-300/50">
+                  <option value="BOTH">Both</option>
+                  <option value="BOOKING">Booking</option>
+                  <option value="ENQUIRY">Enquiry</option>
+                </select>
+                <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-500 px-4 py-3 text-sm font-black text-white transition hover:bg-indigo-400"><Plus className="h-4 w-4" /> Add page</button>
+              </form>
+            </GlassPanel>
+
+            {pages.map((page) => {
+              const item = draft(page.id);
+              const editingOptionId = editingOptionByPage[page.id] || "";
+              const editingOption = page.options.find((option) => option.id === editingOptionId);
+              const selectableParentOptions = allOptions.filter((option) => option.id !== editingOptionId);
+
+              return (
+                <GlassPanel key={page.id} className="p-6">
+                  <div className="mb-5 flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-2xl font-black text-white">{page.title}</h3>
+                        <StatusBadge tone="indigo">{page.intent}</StatusBadge>
+                      </div>
+                      <p className="mt-2 text-sm font-semibold text-white/42">{page.subtitle || "No helper text"}</p>
+                    </div>
+                    <button type="button" onClick={() => removePage(page.id)} className="rounded-xl border border-red-400/15 bg-red-500/8 p-2 text-red-200 hover:bg-red-500/14"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {page.options.map((option) => {
+                      const parent = allOptions.find((candidate) => candidate.id === option.parentOptionId);
+                      const next = pages.find((candidate) => candidate.id === option.nextPageId);
+                      return (
+                        <div key={option.id} className="min-w-0 rounded-2xl border border-white/10 bg-white/[.035] p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="font-black text-white">{option.title}</p>
+                              <p className="mt-2 text-sm font-medium leading-7 text-white/52">{option.answer}</p>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {parent ? <StatusBadge tone="amber">After: {parent.title}</StatusBadge> : <StatusBadge tone="slate">Main option</StatusBadge>}
+                                {next ? <StatusBadge tone="emerald">Next: {next.title}</StatusBadge> : <StatusBadge tone="indigo">{niceAction(option.finalAction)}</StatusBadge>}
+                                {option.serviceName ? <StatusBadge tone="slate">{option.serviceName}</StatusBadge> : null}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <button type="button" onClick={() => startEditOption(page.id, option)} className="rounded-xl p-2 text-white/38 hover:bg-indigo-500/10 hover:text-indigo-200" title="Edit option"><Pencil className="h-4 w-4" /></button>
+                              <button type="button" onClick={() => removeOption(page.id, option.id)} className="rounded-xl p-2 text-white/28 hover:bg-red-500/10 hover:text-red-200" title="Delete option"><Trash2 className="h-4 w-4" /></button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-5 rounded-3xl border border-white/10 bg-black/14 p-4">
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2 text-sm font-black text-white">
+                        <Sparkles className="h-4 w-4 text-indigo-300" />
+                        {editingOption ? `Editing: ${editingOption.title}` : "Add option to this page"}
+                      </div>
+                      {editingOption ? (
+                        <button type="button" onClick={() => cancelEditOption(page.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/55 hover:bg-white/5">
+                          <X className="h-3.5 w-3.5" /> Cancel edit
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
+                      <input value={item.title} onChange={(event) => updateDraft(page.id, "title", event.target.value)} placeholder="Option title shown to prospect" className="rounded-2xl border border-white/10 bg-white/[.045] px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-white/22 focus:border-indigo-300/50" />
+                      <input value={item.serviceName} onChange={(event) => updateDraft(page.id, "serviceName", event.target.value)} placeholder="Related service name" className="rounded-2xl border border-white/10 bg-white/[.045] px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-white/22 focus:border-indigo-300/50" />
+                      <select value={item.parentOptionId} onChange={(event) => updateDraft(page.id, "parentOptionId", event.target.value)} className="rounded-2xl border border-white/10 bg-[#090d16] px-4 py-3 text-sm font-bold text-white outline-none focus:border-indigo-300/50">
+                        <option value="">No parent — show as main option</option>
+                        {selectableParentOptions.map((option) => <option key={option.id} value={option.id}>After: {option.title} ({option.pageTitle})</option>)}
+                      </select>
+                      <select value={item.nextPageId} onChange={(event) => updateDraft(page.id, "nextPageId", event.target.value)} className="rounded-2xl border border-white/10 bg-[#090d16] px-4 py-3 text-sm font-bold text-white outline-none focus:border-indigo-300/50">
+                        <option value="">No next page</option>
+                        {pages.filter((candidate) => candidate.id !== page.id).map((candidate) => <option key={candidate.id} value={candidate.id}>Open page: {candidate.title}</option>)}
+                      </select>
+                      <select value={item.finalAction} onChange={(event) => updateDraft(page.id, "finalAction", event.target.value as FinalAction)} className="rounded-2xl border border-white/10 bg-[#090d16] px-4 py-3 text-sm font-bold text-white outline-none focus:border-indigo-300/50">
+                        <option value="ASK_REQUIREMENT">Ask requirement, then slots</option>
+                        <option value="SHOW_SLOTS">Show slots after response</option>
+                        <option value="GO_TO_NEXT_PAGE">Go to selected next page</option>
+                      </select>
+                      <div className="md:col-span-2 rounded-2xl border border-white/10 bg-cyan-300/[.055] px-4 py-3 text-xs font-semibold leading-6 text-cyan-50/70">
+                        Flow rule: choose <span className="font-black text-white">No parent</span> for first options. Choose <span className="font-black text-white">After: another option</span> when this option should appear only after that earlier option. Choose a next page only when you want to jump to a totally different option page.
+                      </div>
+                      <textarea rows={4} value={item.answer} onChange={(event) => updateDraft(page.id, "answer", event.target.value)} placeholder="Saved answer AI will rewrite for the prospect" className="md:col-span-2 resize-none rounded-2xl border border-white/10 bg-white/[.045] px-4 py-3 text-sm font-semibold leading-7 text-white outline-none placeholder:text-white/22 focus:border-indigo-300/50" />
+                      <button type="button" onClick={() => saveOption(page.id)} className="md:col-span-2 inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[.065] px-4 py-3 text-sm font-black text-white transition hover:bg-white/[.1]">
+                        {editingOption ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                        {editingOption ? "Save option changes" : "Add option"}
                       </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* FAQs */}
-          <div className="glassmorphism rounded-xl border border-white/5 p-6 shadow-xl space-y-5">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-indigo-400" /> Knowledge Base
-              FAQs
-            </h2>
-            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-              {faqs.map((faq) => (
-                <div
-                  key={faq.id}
-                  className="p-3 bg-white/[0.01] border border-white/5 rounded-lg flex items-start justify-between gap-4"
-                >
-                  <div className="text-xs space-y-1">
-                    <p className="font-bold text-white flex items-center gap-1.5">
-                      <HelpCircle className="h-3.5 w-3.5 text-indigo-400 shrink-0" />{" "}
-                      Q: {faq.q}
-                    </p>
-                    <p className="text-gray-400 leading-relaxed pl-5">
-                      A: {faq.a}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveFaq(faq.id)}
-                    className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <form
-              onSubmit={handleAddFaq}
-              className="border-t border-white/5 pt-4 space-y-3"
-            >
-              <p className="text-xs font-semibold text-white">
-                + Add FAQ Question
-              </p>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Question customers often ask"
-                  value={newQ}
-                  onChange={(e) => setNewQ(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-                />
-                <input
-                  type="text"
-                  placeholder="Real answer customers should receive."
-                  value={newA}
-                  onChange={(e) => setNewA(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-                />
-              </div>
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
-              >
-                <Plus className="h-3.5 w-3.5" /> Add to Knowledge Base
-              </button>
-            </form>
-          </div>
+                </GlassPanel>
+              );
+            })}
+          </section>
         </div>
-
-        {/* Services Catalog */}
-        <div className="glassmorphism rounded-xl border border-white/5 p-6 shadow-xl space-y-5">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-indigo-400" /> Service Offer
-            Catalogue
-          </h2>
-          <p className="text-[11px] text-gray-500 leading-relaxed">
-            The public booking assistant uses this list to answer prospect
-            questions before showing booking slots.
-          </p>
-          <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-            {services.map((svc) => (
-              <div
-                key={svc.id}
-                className="p-3 bg-white/[0.01] border border-white/5 rounded-lg flex items-start justify-between gap-4"
-              >
-                <div className="text-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-bold text-white">{svc.name}</p>
-                    <span className="font-mono text-indigo-400 font-semibold text-[10px] bg-indigo-500/10 px-2 py-0.5 rounded">
-                      {svc.price}
-                    </span>
-                  </div>
-                  <p className="text-gray-500 leading-relaxed text-[10px] mt-1">
-                    {svc.desc}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleRemoveService(svc.id)}
-                  className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors cursor-pointer shrink-0"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-          <form
-            onSubmit={handleAddService}
-            className="border-t border-white/5 pt-4 space-y-3"
-          >
-            <p className="text-xs font-semibold text-white">
-              + Add Custom Service
-            </p>
-            <div className="space-y-2">
-              <input
-                type="text"
-                placeholder="Service Title"
-                value={newSName}
-                onChange={(e) => setNewSName(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-              />
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[10px] font-bold">
-                  $
-                </span>
-                <input
-                  type="text"
-                  placeholder="Price or range"
-                  value={newSPrice}
-                  onChange={(e) => setNewSPrice(e.target.value)}
-                  className="w-full pl-6 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-                />
-              </div>
-              <input
-                type="text"
-                placeholder="Brief description"
-                value={newSDesc}
-                onChange={(e) => setNewSDesc(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1"
-            >
-              <Plus className="h-3.5 w-3.5" /> Add Service Offer
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+      </main>
+    </PremiumMotionBackground>
   );
 }

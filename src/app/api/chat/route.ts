@@ -1,19 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hasDatabase } from "@/lib/workspace";
+import { cleanText, getClientIp, rateLimit } from "@/lib/security";
 
 export const runtime = "nodejs";
 
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
+type ChatMessage = { role: string; content: string };
 
 function extractText(data: AnyRecord) {
-  return data.candidates?.[0]?.content?.parts?.map((p: AnyRecord) => p.text).join("\n") || "";
+  const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+  const first = candidates[0] as AnyRecord | undefined;
+  const content = first?.content as AnyRecord | undefined;
+  const parts = Array.isArray(content?.parts) ? content.parts : [];
+  return parts
+    .map((part) => (part && typeof part === "object" ? (part as AnyRecord).text : ""))
+    .filter((text): text is string => typeof text === "string" && Boolean(text.trim()))
+    .join("\n");
+}
+
+function asRecord(value: unknown): AnyRecord | null {
+  return value && typeof value === "object" ? (value as AnyRecord) : null;
+}
+
+function cleanMessage(value: unknown): ChatMessage | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const role = cleanText(record.role, 20);
+  const content = cleanText(record.content, 900);
+  if (!content) return null;
+  return { role: role === "assistant" ? "assistant" : "user", content };
 }
 
 async function loadWorkspaceContext(workspaceId?: string | null) {
   if (!workspaceId || !hasDatabase()) return {};
 
   const { db } = await import("@/lib/db");
-  const workspace = await (db as any).workspace.findUnique({
+  const workspace = await db.workspace.findUnique({
     where: { id: workspaceId },
     include: {
       businessProfile: { include: { services: true, faqs: true } },
@@ -35,17 +57,29 @@ function normalizeGeminiModel(model?: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { messages, workspaceId } = body;
-    let { agentConfig, businessProfile } = body;
+    const ip = getClientIp(req);
+    const limited = rateLimit(`chat:${ip}`, 20, 60_000);
+    if (!limited.ok) return NextResponse.json({ error: "Too many chat requests. Please try again later." }, { status: 429 });
 
-    if (!messages || !Array.isArray(messages)) {
+    let body: AnyRecord = {};
+    try {
+      body = (await req.json()) as AnyRecord;
+    } catch {
+      return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    }
+
+    const workspaceId = cleanText(body.workspaceId, 140);
+    const messages = Array.isArray(body.messages) ? body.messages.map(cleanMessage).filter(Boolean) as ChatMessage[] : [];
+    let agentConfig = asRecord(body.agentConfig);
+    let businessProfile = asRecord(body.businessProfile);
+
+    if (!messages.length) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
 
     const loaded = await loadWorkspaceContext(workspaceId);
-    agentConfig = agentConfig || loaded.agentConfig;
-    businessProfile = businessProfile || loaded.businessProfile;
+    agentConfig = agentConfig || asRecord(loaded.agentConfig);
+    businessProfile = businessProfile || asRecord(loaded.businessProfile);
 
     const apiKey = process.env.GEMINI_API_KEY;
     const model = normalizeGeminiModel(process.env.GEMINI_MODEL);
@@ -64,17 +98,29 @@ export async function POST(req: NextRequest) {
     const fallbackMessage =
       agentConfig?.fallbackMessage ||
       "I'm not certain about that — please share your phone or email and our team will follow up.";
-    const servicesText = businessProfile?.services?.length
-      ? businessProfile.services
-          .map((s: { name: string; price?: string; description?: string; duration?: string }) =>
-            `- ${s.name}${s.price ? ` (${s.price})` : ""}${s.duration ? `, ${s.duration}` : ""}: ${s.description || ""}`
-          )
+    const services = Array.isArray(businessProfile?.services) ? businessProfile.services : [];
+    const faqs = Array.isArray(businessProfile?.faqs) ? businessProfile.faqs : [];
+    const servicesText = services.length
+      ? services
+          .map((item) => {
+            const service = asRecord(item) || {};
+            const name = cleanText(service.name, 120) || "Service";
+            const price = cleanText(service.price, 80);
+            const duration = cleanText(service.duration, 80);
+            const description = cleanText(service.description, 240);
+            return `- ${name}${price ? ` (${price})` : ""}${duration ? `, ${duration}` : ""}: ${description}`;
+          })
           .join("\n")
       : "Services information is not configured yet.";
-    const faqsText = businessProfile?.faqs?.length
-      ? businessProfile.faqs.map((f: { question: string; answer: string }) => `Q: ${f.question}\nA: ${f.answer}`).join("\n\n")
+    const faqsText = faqs.length
+      ? faqs
+          .map((item) => {
+            const faq = asRecord(item) || {};
+            return `Q: ${cleanText(faq.question, 220)}\nA: ${cleanText(faq.answer, 500)}`;
+          })
+          .join("\n\n")
       : "";
-    const history = messages.map((m: { role: string; content: string }) => `${m.role}: ${m.content}`).join("\n");
+    const history = messages.slice(-12).map((m) => `${m.role}: ${m.content}`).join("\n");
 
     const prompt = `You are ${agentName}, a ${tone} AI booking assistant for ${businessProfile?.name || "this business"}.
 

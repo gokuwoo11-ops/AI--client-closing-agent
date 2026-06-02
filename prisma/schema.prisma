@@ -92,7 +92,7 @@ model Workspace {
   bookingSlots       BookingSlot[]
   appointments       Appointment[]
   knowledgeGaps      KnowledgeGap[]
-  funnelOptionPages FunnelOptionPage[]
+  funnelOptionPages  FunnelOptionPage[]
 }
 
 // 3. Workspace Members
@@ -110,24 +110,24 @@ model WorkspaceMember {
 
 // 4. Business Profiles
 model BusinessProfile {
-  id               String    @id @default(uuid())
-  workspaceId      String    @unique
-  name             String
-  niche            String
-  websiteUrl       String?
-  servicesStyle    String?
-  pricingStyle     String?
-  targetCustomer   String?
-  location         String?
-  contactEmail     String
-  contactPhone     String?
-  bookingLink      String?
-  workingHours     String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  services         Service[]
-  faqs             FAQ[]
+  id             String    @id @default(uuid())
+  workspaceId    String    @unique
+  name           String
+  niche          String
+  websiteUrl     String?
+  servicesStyle  String?
+  pricingStyle   String?
+  targetCustomer String?
+  location       String?
+  contactEmail   String
+  contactPhone   String?
+  bookingLink    String?
+  workingHours   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  services       Service[]
+  faqs           FAQ[]
 }
 
 // 5. Business Services offered
@@ -156,44 +156,44 @@ model FAQ {
 
 // 7. AI Agent Configuration
 model AgentConfig {
-  id                    String         @id @default(uuid())
-  workspaceId           String         @unique
-  name                  String         @default("Sales Assistant")
-  tone                  String         @default("professional")
-  customInstructions    String?        @db.Text
-  bookingLink           String?
-  leadScoringRules      String?        @db.Text
-  autoFollowUpSettings  Json?
-  fallbackMessage       String         @default("I apologize, but I am not certain on that. Let me get one of our team members to contact you directly.")
-  handoffRules          String?        @db.Text
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  workspace             Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  followUpRules         FollowUpRule[]
-  conversations         Conversation[]
+  id                   String         @id @default(uuid())
+  workspaceId          String         @unique
+  name                 String         @default("Sales Assistant")
+  tone                 String         @default("professional")
+  customInstructions   String?        @db.Text
+  bookingLink          String?
+  leadScoringRules     String?        @db.Text
+  autoFollowUpSettings Json?
+  fallbackMessage      String         @default("I apologize, but I am not certain on that. Let me get one of our team members to contact you directly.")
+  handoffRules         String?        @db.Text
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  workspace            Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  followUpRules        FollowUpRule[]
+  conversations        Conversation[]
 }
 
 // 8. Leads CRM
 model Lead {
-  id              String         @id @default(uuid())
+  id              String          @id @default(uuid())
   workspaceId     String
   name            String?
   email           String?
   phone           String?
-  status          LeadStatus     @default(NEW)
-  source          String         @default("chat_widget")
-  score           Int            @default(0)
-  requirements    String?        @db.Text
+  status          LeadStatus      @default(NEW)
+  source          String          @default("chat_widget")
+  score           Int             @default(0)
+  requirements    String?         @db.Text
   budget          String?
   timeline        String?
   location        String?
-  summary         String?        @db.Text
-  nextAction      String?        @db.Text
-  notes           String?        @db.Text
+  summary         String?         @db.Text
+  nextAction      String?         @db.Text
+  notes           String?         @db.Text
   lastContactedAt DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  workspace       Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   conversations   Conversation[]
   followUpQueue   FollowUpQueue[]
   appointments    Appointment[]
@@ -208,7 +208,7 @@ model Conversation {
   leadId        String
   agentConfigId String
   channel       String      @default("website_chat") // website_chat, email, whatsapp, instagram, facebook
-  externalId    String?     // For linking to Meta API thread IDs
+  externalId    String? // For linking to Meta API thread IDs
   status        String      @default("active")
   summary       String?     @db.Text
   nextAction    String?     @db.Text
@@ -224,29 +224,29 @@ model Conversation {
 
 // 10. Chat Messages
 model Message {
-  id             String       @id @default(uuid())
-  conversationId String
-  senderType     SenderType
-  content        String       @db.Text
-  externalId     String?      // Provider's specific message ID
-  channelMetadata Json?       // Store channel-specific data (e.g. attachments, whatsapp statuses)
-  isRead         Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  id              String       @id @default(uuid())
+  conversationId  String
+  senderType      SenderType
+  content         String       @db.Text
+  externalId      String? // Provider's specific message ID
+  channelMetadata Json? // Store channel-specific data (e.g. attachments, whatsapp statuses)
+  isRead          Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
 }
 
 // 11. Follow-up Rules
 model FollowUpRule {
-  id            String        @id @default(uuid())
+  id            String          @id @default(uuid())
   agentConfigId String
   delayHours    Int
   messageTopic  String
   sequenceOrder Int
-  isActive      Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  agentConfig   AgentConfig   @relation(fields: [agentConfigId], references: [id], onDelete: Cascade)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  agentConfig   AgentConfig     @relation(fields: [agentConfigId], references: [id], onDelete: Cascade)
   queueItems    FollowUpQueue[]
 }
 
@@ -285,7 +285,7 @@ model Notification {
 model Integration {
   id          String    @id @default(uuid())
   workspaceId String
-  provider    String    // website_widget, email, whatsapp, instagram, facebook, google_calendar
+  provider    String // website_widget, email, whatsapp, instagram, facebook, google_calendar
   config      Json?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
@@ -294,7 +294,6 @@ model Integration {
 
   @@unique([workspaceId, provider])
 }
-
 
 // 15. Manual booking slots shown on the public AI booking funnel
 model BookingSlot {
@@ -316,29 +315,28 @@ model BookingSlot {
 
 // 16. Appointments requested or booked by the AI booking funnel
 model Appointment {
-  id              String            @id @default(uuid())
-  workspaceId     String
-  leadId          String?
-  bookingSlotId   String?
-  status          AppointmentStatus @default(REQUESTED)
-  serviceName     String?
-  requestedTime   String?
-  scheduledStart  DateTime?
-  scheduledEnd    DateTime?
-  leadName        String?
-  leadEmail       String?
-  leadPhone       String?
-  notes           String?           @db.Text
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  workspace       Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  lead            Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  bookingSlot     BookingSlot?      @relation(fields: [bookingSlotId], references: [id], onDelete: SetNull)
+  id             String            @id @default(uuid())
+  workspaceId    String
+  leadId         String?
+  bookingSlotId  String?
+  status         AppointmentStatus @default(REQUESTED)
+  serviceName    String?
+  requestedTime  String?
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  leadName       String?
+  leadEmail      String?
+  leadPhone      String?
+  notes          String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  workspace      Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead           Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  bookingSlot    BookingSlot?      @relation(fields: [bookingSlotId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, status])
   @@index([leadId])
 }
-
 
 // 17. Owner-configurable public funnel option pages
 model FunnelOptionPage {
@@ -359,18 +357,23 @@ model FunnelOptionPage {
 
 // 18. Options shown on owner-configurable public funnel pages
 model FunnelOption {
-  id        String           @id @default(uuid())
-  pageId    String
-  title     String
-  answer    String           @db.Text
-  serviceName String?
-  sortOrder Int              @default(0)
-  isActive  Boolean          @default(true)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  page      FunnelOptionPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  id             String           @id @default(uuid())
+  pageId         String
+  title          String
+  answer         String           @db.Text
+  serviceName    String?
+  parentOptionId String?
+  nextPageId     String?
+  finalAction    String           @default("ASK_REQUIREMENT")
+  sortOrder      Int              @default(0)
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  page           FunnelOptionPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@index([pageId, isActive, sortOrder])
+  @@index([parentOptionId])
+  @@index([nextPageId])
 }
 
 // 19. Business knowledge gaps captured when the public assistant cannot answer from saved info
@@ -385,4 +388,18 @@ model KnowledgeGap {
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, status])
+}
+model PushSubscription {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  endpoint    String   @unique
+  p256dh      String
+  auth        String
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([userId])
 }

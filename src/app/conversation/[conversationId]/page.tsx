@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowRight, Bot, Loader2, MessageCircle, Send, User } from "lucide-react";
+import { Bot, Loader2, MessageCircle, Send, User } from "lucide-react";
 
 type Message = {
   id: string;
@@ -32,7 +32,7 @@ export default function CustomerConversationPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadConversation() {
+  const loadConversation = useCallback(async () => {
     try {
       setError("");
 
@@ -52,13 +52,13 @@ export default function CustomerConversationPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [conversationId]);
 
   useEffect(() => {
     if (conversationId) {
-      loadConversation();
+      void loadConversation();
     }
-  }, [conversationId]);
+  }, [conversationId, loadConversation]);
 
   async function sendMessage(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

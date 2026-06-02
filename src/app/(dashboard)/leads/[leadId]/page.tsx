@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Bot, Calendar, CheckCircle, ChevronDown, ClipboardCopy, ExternalLink, Loader2, Mail, MessageSquare, Phone, Save, Sparkles, User, Zap } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle, ChevronDown, ClipboardCopy, ExternalLink, Loader2, Mail, MessageSquare, Phone, Save, Sparkles, User, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Message = { id?: string; senderType: string; content: string; createdAt: string };

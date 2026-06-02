@@ -1,98 +1,151 @@
-# AI Client Closing Agent
+# AI Client Closing Agent — Premium Real MVP
 
-Production-focused omnichannel AI closing inbox for service businesses.
+Production-focused MVP for service businesses to capture enquiries, qualify leads, run a public booking funnel, store CRM conversations, and notify the owner/team.
+
+This build keeps the original MVP idea and stack:
+
+- Next.js 16 App Router
+- Supabase Auth
+- Supabase Postgres through Prisma
+- Gemini as the AI provider
+- Resend for owner/lead email notifications
+- Meta webhook-ready routes for WhatsApp, Instagram, and Facebook
+
+It does **not** use the separate Vite/Express/Drizzle/Manus prototype stack. Premium UI ideas were merged into this real database-backed app only.
 
 ## What is included
-- Real Supabase Auth and signed-in workspace flow
-- Real database-backed lead capture
-- Workspace-based public lead form: `/lead-form/[workspaceId]`
-- Leads CRM and lead detail page
-- Unified inbox across supported source labels
-- Real inbound webhook endpoints for WhatsApp, Instagram, and Facebook
-- Same-channel AI reply delivery only when real provider credentials are configured
-- Gemini-first AI helper with setup-required behavior when `GEMINI_API_KEY` is missing
-- Integration setup cards for website widget, email, WhatsApp, Instagram, Facebook, and Google Calendar
 
-## No demo / no mock rule
-This project must not pretend that external services are connected.
+- Supabase Auth sign-in/sign-up flow with workspace sync.
+- Multi-tenant workspace data model through Prisma + Supabase Postgres.
+- Premium landing page, owner dashboard shell, public lead form, and public booking funnel.
+- Public lead form: `/lead-form/[workspaceId]`.
+- Premium public booking funnel: `/book/[workspaceId]`.
+- Embeddable website widget: `/api/widget.js?workspaceId=YOUR_WORKSPACE_ID`.
+- Owner dashboard, leads CRM, inbox, AI receptionist settings, booking funnel setup, schedule/appointments, integrations, and intake console.
+- Real notification records for new leads/bookings shown in the dashboard alert menu.
+- Gemini-first AI replies and lead qualification. If `GEMINI_API_KEY` is missing, the app returns setup-required responses instead of simulated AI output.
+- Email notification support through Resend when `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are configured.
+- Real webhook handlers for WhatsApp, Instagram, and Facebook mapping provider accounts to workspace integrations.
 
-- No demo workspace IDs.
-- No fake channel sending.
-- No in-memory CRM fallback.
-- No fake login.
-- No simulated AI reply when Gemini is missing.
-- No saved AGENT reply for Meta channels unless the reply is actually sent through the provider API.
+## Required setup
 
-If credentials or provider setup are missing, the app returns setup-required status.
+Create `.env` from `.env.example` and fill real values:
 
-## Required minimum setup
-Create `.env` from `.env.example` and fill real values only:
+```bash
+cp .env.example .env
+```
+
+Minimum required for local app use:
 
 ```env
 DATABASE_URL="..."
 DIRECT_URL="..."
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_SUPABASE_URL="..."
 NEXT_PUBLIC_SUPABASE_ANON_KEY="..."
-SUPABASE_SERVICE_ROLE_KEY="..."
 GEMINI_API_KEY="..."
-GEMINI_MODEL="models/gemini-2.5-flash"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+Optional production values:
+
+```env
+SUPABASE_SERVICE_ROLE_KEY="..."
+RESEND_API_KEY="..."
+RESEND_FROM_EMAIL="verified@yourdomain.com"
 META_WEBHOOK_VERIFY_TOKEN="..."
 WHATSAPP_PHONE_NUMBER_ID="..."
 WHATSAPP_ACCESS_TOKEN="..."
-FACEBOOK_PAGE_ACCESS_TOKEN="..."
 INSTAGRAM_ACCESS_TOKEN="..."
-RESEND_API_KEY="..."
-RESEND_FROM_EMAIL="..."
+FACEBOOK_PAGE_ACCESS_TOKEN="..."
+STRIPE_SECRET_KEY="..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="..."
 ```
 
+Do not commit `.env`. It contains private keys.
+
 ## Run locally
+
 ```bash
 npm install
-npx prisma validate
-npx prisma generate
-npx prisma migrate dev --name omnichannel_real_setup
+npm run db:generate
+npm run typecheck
+npm run lint
 npm run build
 npm run dev
 ```
 
+Open:
+
+```text
+http://localhost:3000
+```
+
+## Database setup
+
+For the first local/Supabase development setup, after filling `.env`, run:
+
+```bash
+npm run db:push
+```
+
+For production deployments with migrations already created later, use:
+
+```bash
+npm run db:migrate
+```
+
+Do not run destructive reset commands unless you intentionally want to delete database data.
+
 ## Main routes
+
 - `/sign-up`
 - `/sign-in`
 - `/dashboard`
-- `/agent`
 - `/leads`
 - `/inbox`
-- `/intake`
+- `/agent`
+- `/funnel`
+- `/appointments`
 - `/integrations`
+- `/intake`
+- `/settings`
 - `/lead-form/[workspaceId]`
+- `/book/[workspaceId]`
+- `/api/widget.js?workspaceId=[workspaceId]`
 
-## Webhook routes
-- `/api/webhooks/whatsapp`
-- `/api/webhooks/instagram`
-- `/api/webhooks/facebook`
+## Selling checklist
 
-For real provider webhooks, map provider account IDs to workspaces through the `Integration.config` JSON.
+Before sharing with a client:
 
-## AI Booking Funnel
+1. Create/sign in with the owner account.
+2. Finish onboarding and confirm the workspace exists.
+3. Add real services, FAQ answers, funnel option pages, and booking slots.
+4. Test `/lead-form/[workspaceId]` and `/book/[workspaceId]`.
+5. Confirm leads appear in `/leads`, `/inbox`, `/appointments`, and dashboard alerts.
+6. Add Resend values if the owner should receive email alerts.
+7. Deploy to Vercel and update `NEXT_PUBLIC_APP_URL` to the deployed URL.
+8. Add Meta webhook URLs only after deployment.
 
-The current sellable flow is channel-routing first:
+## Deployment notes
 
-1. Add the client AI booking link to WhatsApp/Instagram/Facebook/website/Google auto-replies.
-2. Prospects land on `/book/[workspaceId]`.
-3. The page captures real lead details, lets the prospect choose a real manual booking slot, runs Gemini qualification, saves the lead/conversation, creates an appointment, and sends real emails only when Resend is configured.
-4. Use `/funnel` inside the dashboard to copy auto-reply text, copy the public booking link, and create available slots.
+- This project uses Next.js 16 and the `proxy.ts` convention instead of deprecated `middleware.ts`.
+- Public lead capture, public booking, and public chat APIs are intentionally not blocked by auth proxy.
+- Protected dashboard/API routes verify the signed-in workspace.
+- `npm run typecheck` performs TypeScript validation separately. `next build` skips internal Next type validation to avoid deploy-time hangs with the generated Prisma client, while normal TypeScript checking still passes through the separate script.
 
-No fake bookings or fake email sends are used. Missing Gemini/Resend/database setup returns setup-required behavior.
+## Flow option chaining
 
-## Booking qualification update
+The public booking funnel now supports real sequential flow options.
 
-The public booking page now works as a simple prospect-facing qualification flow before slot selection:
+Example setup:
+1. Go to `/agent`.
+2. Create one option page, for example `What do you need?`.
+3. Add a main option with `No parent`, for example `Website`.
+4. Add another option and choose `After: Website`, for example `New website`.
+5. Add another child option and choose `After: New website`, for example `Business website`.
+6. Open `/book/[workspaceId]`.
 
-1. Prospect opens `/book/[workspaceId]` from WhatsApp/Instagram/Facebook/website auto-reply.
-2. The page asks quick questions first: service, requirement, preferred time, name, and contact.
-3. The qualification is saved to the real database through `/api/public/qualify`.
-4. Only after qualification succeeds are booking slots shown.
-5. When the prospect selects a slot, `/api/public/bookings` creates the appointment and updates the lead.
+The prospect will see:
+`Website` → `New website` → `Business website` → requirement/slot → saved lead.
 
-No demo/mock booking is included.
+This is database-backed through `FunnelOptionPage` and `FunnelOption`; no mock flow data is used.

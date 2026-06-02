@@ -10,29 +10,26 @@ const protectedPagePrefixes = [
   "/appointments",
   "/schedule",
   "/settings",
-  "/channels",
-  "/business-setup",
   "/integrations",
   "/intake",
   "/conversation",
 ];
 
 const protectedApiPrefixes = [
-  "/api/leads",
   "/api/appointments",
   "/api/bookings/slots",
   "/api/agent-config",
   "/api/inbound",
   "/api/conversation",
   "/api/workspace/current",
-  "/api/chat",
+  "/api/notifications",
 ];
 
 function isProtectedPath(pathname: string) {
   return protectedPagePrefixes.some((path) => pathname.startsWith(path)) || protectedApiPrefixes.some((path) => pathname.startsWith(path));
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (!isProtectedPath(pathname)) return NextResponse.next();
 
@@ -83,18 +80,15 @@ export const config = {
     "/appointments/:path*",
     "/schedule/:path*",
     "/settings/:path*",
-    "/channels/:path*",
-    "/business-setup/:path*",
     "/integrations/:path*",
     "/intake/:path*",
     "/conversation/:path*",
-    "/api/leads/:path*",
     "/api/appointments/:path*",
     "/api/bookings/slots/:path*",
     "/api/agent-config/:path*",
     "/api/inbound/:path*",
     "/api/conversation/:path*",
     "/api/workspace/current/:path*",
-    "/api/chat/:path*",
+    "/api/notifications/:path*",
   ],
 };

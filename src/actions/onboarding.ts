@@ -4,21 +4,27 @@ import { revalidatePath } from "next/cache";
 import { getCurrentWorkspace } from "@/lib/current-workspace";
 import { hasDatabase } from "@/lib/workspace";
 
-async function requireCurrentWorkspaceId() {
+async function requireCurrentWorkspace() {
   const current = await getCurrentWorkspace();
   if (!current?.workspace?.id) throw new Error("You must be signed in with a workspace to save onboarding.");
+  return current;
+}
+
+async function requireCurrentWorkspaceId() {
+  const current = await requireCurrentWorkspace();
   return current.workspace.id;
 }
 
 export async function saveBusinessProfile(formData: FormData) {
   if (!hasDatabase()) throw new Error("Database is not configured.");
-  const id = await requireCurrentWorkspaceId();
+  const current = await requireCurrentWorkspace();
+  const id = current.workspace.id;
   const name = String(formData.get("businessName") || "").trim();
   const niche = String(formData.get("niche") || "").trim();
   const websiteUrl = String(formData.get("websiteUrl") || "").trim();
   const location = String(formData.get("location") || "").trim();
-  const contactEmail = String(formData.get("contactEmail") || "").trim();
-  if (!name || !niche || !contactEmail) throw new Error("Business name, niche, and contact email are required.");
+  const contactEmail = String(formData.get("contactEmail") || current.user?.email || current.authUser?.email || "").trim();
+  if (!name || !niche) throw new Error("Business name and niche are required.");
   const { db } = await import("@/lib/db");
   await (db as any).businessProfile.upsert({ where: { workspaceId: id }, update: { name, niche, websiteUrl, location, contactEmail }, create: { workspaceId: id, name, niche, websiteUrl, location, contactEmail } });
   revalidatePath("/dashboard");

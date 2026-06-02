@@ -136,3 +136,8 @@ export type FunnelOption = Prisma.FunnelOptionModel
  * 
  */
 export type KnowledgeGap = Prisma.KnowledgeGapModel
+/**
+ * Model PushSubscription
+ * 
+ */
+export type PushSubscription = Prisma.PushSubscriptionModel

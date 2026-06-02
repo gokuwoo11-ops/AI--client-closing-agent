@@ -69,7 +69,8 @@ export const ModelName = {
   Appointment: 'Appointment',
   FunnelOptionPage: 'FunnelOptionPage',
   FunnelOption: 'FunnelOption',
-  KnowledgeGap: 'KnowledgeGap'
+  KnowledgeGap: 'KnowledgeGap',
+  PushSubscription: 'PushSubscription'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -356,6 +357,9 @@ export const FunnelOptionScalarFieldEnum = {
   title: 'title',
   answer: 'answer',
   serviceName: 'serviceName',
+  parentOptionId: 'parentOptionId',
+  nextPageId: 'nextPageId',
+  finalAction: 'finalAction',
   sortOrder: 'sortOrder',
   isActive: 'isActive',
   createdAt: 'createdAt',
@@ -376,6 +380,21 @@ export const KnowledgeGapScalarFieldEnum = {
 } as const
 
 export type KnowledgeGapScalarFieldEnum = (typeof KnowledgeGapScalarFieldEnum)[keyof typeof KnowledgeGapScalarFieldEnum]
+
+
+export const PushSubscriptionScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  userId: 'userId',
+  endpoint: 'endpoint',
+  p256dh: 'p256dh',
+  auth: 'auth',
+  userAgent: 'userAgent',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PushSubscriptionScalarFieldEnum = (typeof PushSubscriptionScalarFieldEnum)[keyof typeof PushSubscriptionScalarFieldEnum]
 
 
 export const SortOrder = {

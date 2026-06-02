@@ -1,45 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cleanText, getClientIp, rateLimit } from "@/lib/security";
 
-function fallbackReply(
-  optionTitle: string,
-  savedAnswer: string,
-  businessName: string
-) {
-  const title = optionTitle || "this option";
-
-  if (
-    title.toLowerCase().includes("other") ||
-    title.toLowerCase().includes("custom")
-  ) {
-    return `Thanks, we can check this with the ${businessName} team. Tell us what you need help with, then choose a suitable time so we can understand your requirement and confirm the best solution.`;
-  }
-
-  const base =
-    savedAnswer ||
-    "The team will review your requirement and recommend the best next step.";
-
-  return `${title} is a good choice. ${base} Tell us a little more about what you need so we can recommend the best available time.`;
-}
-
 function normalizeModel(model: string) {
   if (!model) return "models/gemini-2.5-flash";
   return model.startsWith("models/") ? model : `models/${model}`;
 }
 
+function isBrokenReply(reply: string) {
+  const text = reply.trim();
+  if (!text || text.length < 85) return true;
+  if (/great choice!?\s*you['’]?ve?\s*$/i.test(text)) return true;
+  if (/you['’]?ve\s*$/i.test(text)) return true;
+  if (!/[.!?]$/.test(text)) return true;
+  return false;
+}
+
+function fallbackReply(args: { optionTitle: string; savedAnswer: string; businessName: string; mainOption: string }) {
+  const title = args.optionTitle || "this option";
+  const parent = args.mainOption && args.mainOption !== title ? args.mainOption : "this service";
+  const base = args.savedAnswer || "The team will review your requirement and recommend the best next step.";
+
+  if (/other|custom/i.test(title)) {
+    return `Thanks. This is a custom request under ${parent}. Share the exact details below, then choose a suitable time so the ${args.businessName} team can review it with you and confirm the best solution.`;
+  }
+
+  return `${title} is a good fit for this request. ${base} Share a few details about what you need, then choose a suitable time so the ${args.businessName} team can guide you properly.`;
+}
+
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
   const limited = rateLimit(`public-assistant:${ip}`, 18, 60_000);
-
   if (!limited.ok) {
-    return NextResponse.json(
-      { error: "Too many requests. Please try again later." },
-      { status: 429 }
-    );
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 
   let body: Record<string, unknown> = {};
-
   try {
     body = (await req.json()) as Record<string, unknown>;
   } catch {
@@ -47,104 +42,60 @@ export async function POST(req: NextRequest) {
   }
 
   const businessName = cleanText(body.businessName, 120) || "the business";
-  const optionTitle = cleanText(
-    body.selectedOption || body.optionTitle,
-    160
-  );
-  const savedAnswer = cleanText(body.savedAnswer || body.answer, 1600);
-  const prospectQuestion = cleanText(body.question || body.message, 700);
-  const serviceName = cleanText(body.serviceName, 160) || optionTitle;
+  const mainOption = cleanText(body.mainOption, 180);
+  const optionTitle = cleanText(body.selectedOption || body.optionTitle, 180);
+  const savedAnswer = cleanText(body.savedAnswer || body.answer, 1800);
+  const prospectQuestion = cleanText(body.question || body.message, 800);
+  const serviceName = cleanText(body.serviceName, 180) || optionTitle;
 
   if (!optionTitle && !savedAnswer && !prospectQuestion) {
-    return NextResponse.json(
-      { error: "Missing selected option." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing selected option." }, { status: 400 });
   }
 
-  const fallback = fallbackReply(optionTitle, savedAnswer, businessName);
+  const fallback = fallbackReply({ optionTitle, savedAnswer, businessName, mainOption });
   const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    return NextResponse.json({
-      reply: fallback,
-      setupRequired: true,
-    });
-  }
+  if (!apiKey) return NextResponse.json({ reply: fallback, setupRequired: true });
 
   const prompt = `You are the public booking assistant for ${businessName}.
 
-A prospect selected this option:
-Option title: ${optionTitle}
+The prospect is inside this option flow:
+Main option/category: ${mainOption || optionTitle}
+Final selected option: ${optionTitle}
 Related service: ${serviceName}
-Saved owner answer: ${savedAnswer}
+Owner saved answer: ${savedAnswer}
 Prospect context: ${prospectQuestion}
 
-Write a clean business response for the prospect.
+Write a complete clean business response for the prospect.
 
 Rules:
-- Do not show raw field labels like "Service:" or "Price:".
-- Do not copy database-style bullet text directly.
-- Do not say "AI is thinking".
-- Do not invent prices, discounts, guarantees, or features.
-- Use only the selected option and saved owner answer.
-- Keep it short, confident, and helpful.
-- If the option is Other or Custom, tell them we can check it with the team and guide them to share details and choose a slot.
+- Use only the main option, selected option, and owner saved answer.
+- Never show raw labels like "Service:" or "Price:".
+- Never copy database-style bullet text directly.
+- Never say "AI is thinking".
+- Never invent prices, discounts, guarantees, or features.
+- If the final selected option is Other/Custom, keep the response connected to the main option/category.
+- Keep the response short, confident, and helpful.
 - End by asking them to share a few details or continue booking.
-
-Return only the response text.`;
+- Return only the final response text.`;
 
   try {
-    const model = normalizeModel(
-      process.env.GEMINI_MODEL || "models/gemini-2.5-flash"
-    );
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.35,
-            maxOutputTokens: 220,
-          },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Gemini request failed with status ${response.status}`);
-    }
-
-    const data = (await response.json()) as {
-      candidates?: Array<{
-        content?: {
-          parts?: Array<{ text?: string }>;
-        };
-      }>;
-    };
-
-    const reply = data.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text || "")
-      .join(" ")
-      .trim();
-
-    return NextResponse.json({
-      reply: reply || fallback,
+    const model = normalizeModel(process.env.GEMINI_MODEL || "models/gemini-2.5-flash");
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.32, maxOutputTokens: 230 },
+      }),
     });
+
+    if (!response.ok) throw new Error(`Gemini request failed with status ${response.status}`);
+    const data = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    const reply = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join(" ").trim() || "";
+
+    return NextResponse.json({ reply: isBrokenReply(reply) ? fallback : reply, aiFallback: isBrokenReply(reply) || undefined });
   } catch (error) {
     console.error("Gemini option reply failed:", error);
-
-    return NextResponse.json({
-      reply: fallback,
-      aiFallback: true,
-    });
+    return NextResponse.json({ reply: fallback, aiFallback: true });
   }
 }

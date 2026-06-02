@@ -1,148 +1,151 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { CalendarCheck, Mail, Phone, RefreshCw, UserRound } from "lucide-react";
+import { motion } from "framer-motion";
+import { CalendarClock, Clock, UsersRound } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { GlassPanel, PremiumMotionBackground, StatusBadge } from "@/components/premium/PremiumMotionBackground";
 
-type Appointment = {
-  id: string;
-  status: string;
-  serviceName?: string | null;
-  scheduledStart?: string | null;
-  scheduledEnd?: string | null;
-  requestedTime?: string | null;
-  leadName?: string | null;
-  leadEmail?: string | null;
-  leadPhone?: string | null;
-  notes?: string | null;
-  lead?: { id: string; name?: string | null; email?: string | null; phone?: string | null; status: string; score: number } | null;
-};
+type Appointment = { id: string; title?: string; name?: string; leadName?: string; leadEmail?: string; leadPhone?: string; email?: string; phone?: string; startsAt?: string; scheduledStart?: string; endsAt?: string; scheduledEnd?: string; status?: string; selectedOption?: string; serviceNeeded?: string; requirement?: string; requirements?: string; message?: string; notes?: string };
+type AnyRecord = Record<string, unknown>;
 
-function formatDate(value?: string | null) {
-  if (!value) return "No date selected";
-  return new Date(value).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+function asRecord(value: unknown): AnyRecord | null {
+  return value && typeof value === "object" ? (value as AnyRecord) : null;
 }
 
-function formatTime(appointment: Appointment) {
-  if (!appointment.scheduledStart) return appointment.requestedTime || "No time selected";
-  const start = new Date(appointment.scheduledStart);
-  const end = appointment.scheduledEnd ? new Date(appointment.scheduledEnd) : null;
-  return `${start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}${end ? ` - ${end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}`;
-}
-
-export default function AppointmentsPage() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [range, setRange] = useState("upcoming");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  async function load(nextRange = range) {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`/api/appointments?range=${nextRange}&limit=100`, { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load schedule.");
-      setAppointments(data.appointments || []);
-    } catch (err) {
-      setAppointments([]);
-      setError(err instanceof Error ? err.message : "Failed to load schedule.");
-    } finally {
-      setLoading(false);
-    }
+function arrayFromPayload<T>(payload: unknown, keys: string[]): T[] {
+  const record = asRecord(payload);
+  if (!record) return [];
+  for (const key of keys) {
+    if (Array.isArray(record[key])) return record[key] as T[];
   }
+  if (Array.isArray(payload)) return payload as T[];
+  return [];
+}
+
+function formatDate(value?: string) {
+  if (!value) return { day: "Time not set", time: "—" };
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return { day: "Time not set", time: "—" };
+  return {
+    day: date.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" }),
+    time: date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+  };
+}
+
+function duration(start?: string, end?: string) {
+  if (!start || !end) return "";
+  const s = new Date(start).getTime();
+  const e = new Date(end).getTime();
+  if (Number.isNaN(s) || Number.isNaN(e) || e <= s) return "";
+  return `${Math.round((e - s) / 60000)} min`;
+}
+
+function toneFor(status?: string): "indigo" | "emerald" | "amber" | "slate" | "red" {
+  const low = (status || "Booked").toLowerCase();
+  if (low.includes("confirm") || low.includes("book")) return "emerald";
+  if (low.includes("follow") || low.includes("pending")) return "amber";
+  if (low.includes("lost") || low.includes("cancel")) return "red";
+  return "indigo";
+}
+
+export default function SchedulePage() {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    load(range);
-  }, [range]);
+    let alive = true;
+    fetch("/api/appointments", { cache: "no-store" })
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((payload: unknown) => {
+        if (!alive) return;
+        setAppointments(arrayFromPayload<Appointment>(payload, ["appointments", "bookings", "items", "data", "results"]));
+      })
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, []);
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, Appointment[]>();
-    for (const appointment of appointments) {
-      const key = appointment.scheduledStart ? formatDate(appointment.scheduledStart) : "No scheduled date";
-      map.set(key, [...(map.get(key) || []), appointment]);
-    }
-    return Array.from(map.entries());
-  }, [appointments]);
+  const sorted = useMemo(() => [...appointments].sort((a, b) => new Date(a.startsAt || a.scheduledStart || 0).getTime() - new Date(b.startsAt || b.scheduledStart || 0).getTime()), [appointments]);
+  const upcoming = sorted.filter((item) => { const start = item.startsAt || item.scheduledStart; return !start || new Date(start).getTime() >= Date.now(); });
+  const old = sorted.filter((item) => { const start = item.startsAt || item.scheduledStart; return start && new Date(start).getTime() < Date.now(); }).reverse();
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <section className="rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,.22),transparent_32%),linear-gradient(135deg,#0f172a,#070b14_58%,#111827)] p-6 shadow-2xl shadow-black/20 sm:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-100">
-              <CalendarCheck className="h-3.5 w-3.5" /> Owner schedule
-            </div>
-            <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl">Daily booked schedule</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
-              Bookings are sorted by time. The earliest confirmed appointment appears first for each day.
-            </p>
-          </div>
-          <button onClick={() => load()} className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-xs font-black text-white hover:bg-white/15">
-            <RefreshCw className="h-4 w-4" /> Refresh
-          </button>
+    <PremiumMotionBackground variant="owner">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-7">
+          <p className="signature-font text-3xl text-amber-200/90">Daily Schedule</p>
+          <h1 className="mt-1 text-4xl font-black tracking-tight text-white">Bookings sorted by time</h1>
+          <p className="mt-2 text-sm font-medium text-white/45">Upcoming appointments stay first. Older completed calls stay lower.</p>
         </div>
-      </section>
 
-      <div className="flex flex-wrap gap-3">
-        {["today", "upcoming", "all"].map((item) => (
-          <button
-            key={item}
-            onClick={() => setRange(item)}
-            className={`rounded-2xl px-4 py-2.5 text-xs font-black uppercase tracking-[0.12em] ${range === item ? "bg-emerald-400 text-slate-950" : "border border-white/10 bg-white/10 text-white hover:bg-white/15"}`}
-          >
-            {item}
-          </button>
-        ))}
-        <Link href="/funnel" className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-white hover:bg-white/15">
-          Manage slots
-        </Link>
-      </div>
-
-      {error && <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">{error}</div>}
-
-      {loading ? (
-        <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-10 text-center text-sm text-slate-400">Loading schedule...</div>
-      ) : appointments.length === 0 ? (
-        <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-10 text-center">
-          <CalendarCheck className="mx-auto h-12 w-12 text-slate-600" />
-          <p className="mt-4 font-black text-white">No bookings found</p>
-          <p className="mt-2 text-sm text-slate-400">Bookings will appear here after prospects qualify and choose an available slot.</p>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          {grouped.map(([date, items]) => (
-            <section key={date} className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 sm:p-6">
-              <h2 className="text-xl font-black text-white">{date}</h2>
-              <div className="mt-4 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-                {items.map((appointment, index) => (
-                  <Link key={appointment.id} href={appointment.lead?.id ? `/leads/${appointment.lead.id}` : "/appointments"} className="block p-4 transition hover:bg-white/[0.03]">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div className="flex gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-400 text-sm font-black text-slate-950">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <p className="text-lg font-black text-white">{formatTime(appointment)}</p>
-                          <p className="mt-1 text-sm font-bold text-slate-300">{appointment.leadName || appointment.lead?.name || "Booked prospect"}</p>
-                          <p className="mt-1 text-xs text-slate-500">{appointment.serviceName || "Service not selected"}</p>
-                          {appointment.notes && <p className="mt-2 max-w-xl text-xs leading-5 text-slate-400">{appointment.notes}</p>}
-                        </div>
-                      </div>
-                      <div className="text-right text-xs text-slate-400">
-                        <p className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 font-black uppercase text-emerald-300">{appointment.status}</p>
-                        {appointment.leadPhone && <p className="mt-2 flex items-center justify-end gap-1"><Phone className="h-3 w-3" />{appointment.leadPhone}</p>}
-                        {appointment.leadEmail && <p className="mt-1 flex items-center justify-end gap-1"><Mail className="h-3 w-3" />{appointment.leadEmail}</p>}
-                        {!appointment.leadPhone && !appointment.leadEmail && <p className="mt-2 flex items-center justify-end gap-1"><UserRound className="h-3 w-3" />No contact saved</p>}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+        <GlassPanel className="p-4 sm:p-6">
+          <div className="mb-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-400/10 text-indigo-200"><CalendarClock className="h-5 w-5" /></div>
+              <div>
+                <h2 className="text-xl font-black text-white">Upcoming bookings</h2>
+                <p className="text-xs font-semibold text-white/35">Earliest appointment appears first.</p>
               </div>
-            </section>
-          ))}
+            </div>
+            <StatusBadge tone="emerald">{upcoming.length} upcoming</StatusBadge>
+          </div>
+
+          <div className="space-y-3">
+            {upcoming.map((appointment, index) => <AppointmentCard key={appointment.id} appointment={appointment} index={index} />)}
+            {!loading && upcoming.length === 0 && <EmptySchedule />}
+          </div>
+        </GlassPanel>
+
+        {old.length > 0 && (
+          <GlassPanel className="mt-6 p-4 sm:p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-xl font-black text-white">Completed / older</h2>
+              <StatusBadge tone="slate">Lower priority</StatusBadge>
+            </div>
+            <div className="space-y-3 opacity-75">
+              {old.slice(0, 8).map((appointment, index) => <AppointmentCard key={appointment.id} appointment={appointment} index={index} compact />)}
+            </div>
+          </GlassPanel>
+        )}
+      </main>
+    </PremiumMotionBackground>
+  );
+}
+
+function AppointmentCard({ appointment, index, compact = false }: { appointment: Appointment; index: number; compact?: boolean }) {
+  const startValue = appointment.startsAt || appointment.scheduledStart;
+  const endValue = appointment.endsAt || appointment.scheduledEnd;
+  const start = formatDate(startValue);
+  const message = appointment.requirement || appointment.requirements || appointment.message || appointment.notes || "No requirement added.";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.025 }}
+      className={`rounded-3xl border border-white/10 bg-white/[.04] p-5 transition hover:border-white/20 hover:bg-white/[.065] ${compact ? "" : "hover:-translate-y-1"}`}
+    >
+      <div className="grid gap-4 md:grid-cols-[180px_1fr_auto] md:items-center">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[.16em] text-indigo-200">{start.day}</p>
+          <p className="mt-2 flex items-center gap-2 text-2xl font-black text-white"><Clock className="h-5 w-5 text-white/35" /> {start.time}</p>
+          <p className="mt-1 text-xs font-semibold text-white/35">{duration(startValue, endValue)}</p>
         </div>
-      )}
+        <div>
+          <p className="text-lg font-black text-white">{appointment.title || appointment.serviceNeeded || appointment.selectedOption || "Appointment"}</p>
+          <p className="mt-1 text-sm font-semibold text-white/45"><UsersRound className="mr-2 inline h-4 w-4" />{appointment.leadName || appointment.name || "Lead"} {appointment.leadPhone || appointment.phone ? `· ${appointment.leadPhone || appointment.phone}` : ""}</p>
+          <p className="mt-2 max-w-2xl text-sm leading-7 text-white/38">{message}</p>
+        </div>
+        <StatusBadge tone={toneFor(appointment.status)}>{appointment.status || "Booked"}</StatusBadge>
+      </div>
+    </motion.div>
+  );
+}
+
+function EmptySchedule() {
+  return (
+    <div className="rounded-3xl border border-dashed border-white/12 bg-white/[.025] p-10 text-center">
+      <CalendarClock className="mx-auto h-8 w-8 text-white/28" />
+      <p className="mt-4 text-lg font-black text-white/75">No bookings yet</p>
+      <p className="mt-2 text-sm text-white/38">When prospects choose slots, their appointments will appear here in time order.</p>
     </div>
   );
 }

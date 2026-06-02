@@ -19,10 +19,10 @@ import { PremiumMotionBackground, StatusBadge } from "@/components/premium/Premi
 
 /* ─── Static data — visual copy only, no real app state ─── */
 const PROOF_ITEMS = [
-  { label: "Supabase Auth workspace", green: true },
-  { label: "Gemini AI ready", green: true },
-  { label: "Real database capture", green: false },
-  { label: "Database-backed lead capture", green: false },
+  { label: "Instant lead capture", green: true },
+  { label: "Smart AI receptionist", green: true },
+  { label: "Professional booking flow", green: false },
+  { label: "Owner notified instantly", green: false },
 ];
 
 const WORKFLOW_STEPS = [
@@ -573,7 +573,7 @@ export default function LandingPage() {
                 animation: "draftly-pulse-dot 1.5s ease-in-out infinite",
               }}
             />
-            Real database-backed MVP for leads and bookings
+            Built for real lead capture and appointments
           </motion.div>
 
           {/* headline */}
@@ -853,7 +853,7 @@ export default function LandingPage() {
                   className="h-1.5 w-1.5 rounded-full bg-emerald-400"
                   style={{ animation: "draftly-pulse-dot 1.5s ease-in-out infinite", boxShadow: "0 0 8px rgba(52,211,153,0.9)" }}
                 />
-                Real MVP — production data only
+                Ready for real business enquiries
               </span>
             </div>
             <h2
@@ -927,7 +927,7 @@ export default function LandingPage() {
               ))}
             </nav>
             <p className="text-[12px] text-white/20">
-              AI client closing system · Supabase + Gemini
+              AI client closing system · AI client closing and booking system
             </p>
           </div>
         </footer>
